@@ -1,0 +1,8 @@
+{
+  "name": "katex",
+  "version": "0.18.9",
+  "source": "https://registry.npmjs.org/katex/-/katex-0.18.9.tgz",
+  "integrity": "sha512-8ad9RyoKsb/g8/yLFE+KAlP+DhbCTRUNi/V9XGsxn0R+trJJltNwzcDNo0q/DEkOy5fQUQTAQyCXCYSE+OakTQ==",
+  "license": "MIT",
+  "files": 63
+}

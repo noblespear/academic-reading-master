@@ -1,0 +1,2 @@
+# PDF extraction and auditing only. Core service/reporting uses Python stdlib.
+PyMuPDF

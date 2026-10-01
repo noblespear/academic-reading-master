@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>论文阅读器</title>
+  <link rel="stylesheet" href="styles-v3.css">
+  <link rel="stylesheet" href="math/katex.min.css">
+  <script src="math/katex.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><button id="toc-toggle" class="icon-button" aria-label="展开目录" title="目录">☰</button><span class="brand-label">论文阅读</span><span id="paper-short-title"></span></div>
+    <nav class="view-tabs" aria-label="阅读视图"><button data-view="overview" aria-selected="true">概览</button><button data-view="explanation" aria-selected="false">详解</button><button data-view="translation" aria-selected="false">翻译</button></nav>
+    <div class="top-actions"><a id="source-pdf" class="quiet-button" href="source.pdf" target="_blank" rel="noopener">原文 PDF ↗</a><button id="annotations-toggle" class="quiet-button">批注 <span id="annotation-count">0</span><span id="unread-count" class="unread-count" hidden></span></button></div>
+  </header>
+  <div class="reader-layout">
+    <aside id="toc-sidebar" class="toc-sidebar" aria-label="文章目录"><div class="toc-heading"><span id="toc-view-label">概览目录</span><span id="section-count"></span></div><nav id="toc-list"></nav><div class="sidebar-bottom"><div id="connection-status" role="status">正在连接本地服务…</div><p>选中文字写批注；图表和公式可整块提问。</p><button id="stop-service" class="quiet-button" title="停止此文献库的后台服务，问题保留；重新打开启动器可继续。">停止后台服务</button></div></aside>
+    <main id="reading-scroll" class="reading-scroll" tabindex="-1"><div class="paper-width"><header id="paper-heading" class="paper-heading"></header><div id="view-intro" class="view-intro"></div><article id="paper-content"></article><footer class="paper-footer">批注草稿自动保存在本浏览器。点击提交后，问题会进入答疑队列。</footer></div></main>
+  </div>
+  <div id="annotation-layer" class="annotation-layer" aria-label="正文批注标记"></div>
+  <button id="selection-action" class="selection-action" hidden>＋ 写批注</button>
+  <aside id="annotation-panel" class="annotation-panel" aria-label="批注与问答" hidden><header class="panel-header"><strong id="panel-title">批注与问答</strong><div><button id="panel-collapse" class="icon-button" aria-label="折叠问答">−</button><button id="panel-close" class="icon-button" aria-label="关闭问答">×</button></div></header><div id="panel-body" class="panel-body"></div></aside>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="paper-data.js"></script>
+  <script src="reader-v3.js"></script>
+</body>
+</html>

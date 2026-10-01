@@ -1,0 +1,3 @@
+-r requirements.txt
+# Optional real-browser regression tests.
+playwright

@@ -1,0 +1,47 @@
+# User-owned papers, research records and local authentication
+PaperVault/
+papers/
+.reader/
+reports/
+searches/
+themes/
+.env
+.env.*
+!.env.example
+credentials*
+auth.json
+config.toml
+*.pem
+*.key
+*.p12
+*.pfx
+*.pdf
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+server.json
+bridge-config.json
+annotations.json
+
+# Build and test output
+dist/
+outputs/
+validation/
+scripts/tests/artifacts/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+*.skill
+*.zip
+
+# Editor and platform files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
