@@ -26,7 +26,7 @@
 
 这是提供给 AI 智能体宿主使用的 **skill 目录**。论文检索、内容生成和周报写作由宿主执行；本地脚本负责文献管理、页面、批注队列和导出。
 
-1. 下载分发文件 `academic-reading-master-v3.0.0.skill`。它是 ZIP 容器，包含一个 `academic-reading-master/` 目录；若宿主支持该格式，可按其导入方式安装。
+1. 下载分发文件 `academic-reading-master-v3.0.1.skill`。它是 ZIP 容器，包含一个 `academic-reading-master/` 目录；若宿主支持该格式，可按其导入方式安装。
 2. 宿主不支持直接导入时，使用同内容的 `.zip` 文件，或将 `.skill` 的扩展名改为 `.zip` 后解压。把 `academic-reading-master/` 放入宿主的 skills 目录，确保 `SKILL.md` 位于该目录的顶层。例如，Codex 的用户 skills 目录可以使用 `~/.agents/skills/`。
 3. 按宿主的技能加载方式重新加载，然后在会话中提出任务。已有文献库时指定其位置；首次使用可让宿主创建 `PaperVault`。
 
@@ -93,7 +93,7 @@ python -m unittest discover -s scripts/tests -p test_collection_reports.py -v
 python -m unittest discover -s scripts/tests -p test_report_explanation.py -v
 ```
 
-前端测试可另行安装 `requirements-dev.txt` 和 Playwright Chromium，再运行 `scripts/tests/test_frontend_v3.py`、`scripts/tests/test_annotation_geometry.py`。真实宿主恢复测试需显式启用，详见桥接协议；其输出属于本地运行资料。
+前端测试可另行安装 `requirements-dev.txt` 和 Playwright Chromium，再运行 `scripts/tests/test_frontend_v3.py`、`scripts/tests/test_annotation_geometry.py`。批注面板滚动与后台更新回归使用 `scripts/tests/test_panel_scroll.py`，覆盖轮询、SSE 新回答及追问输入。真实宿主恢复测试需显式启用，详见桥接协议；其输出属于本地运行资料。
 
 重新打包：
 
