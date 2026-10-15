@@ -1,0 +1,30 @@
+{
+  "snapshot_label": "legacy-three-pass-20261001",
+  "declared_skill_semver": null,
+  "backup_date": "2026-10-01",
+  "recovered_on": "2026-10-16",
+  "provenance": "Two independent local codex-original and agents-original backups agreed on all 20 source files.",
+  "source_files_sha256": {
+    "SKILL.md": "2cc783bb7f1c382fa08280c862c1bb6addd3d775bc405d5a4b6d74efb25fcb19",
+    "assets/reader.html": "17a95473727af917a4927a89e3a9281486a4d7486aac6918228f2de8dd304bf5",
+    "assets/reader.js": "f93ab65133d1a2f01a4d6c2446e89d8d264e3970536e079e6ee1bb822bfc8ee6",
+    "assets/styles.css": "63e32f3baeefdf2c17eab8fa860f1c003e9aeb53eceebefac0672d03858833bb",
+    "references/annotation_guide.md": "2dc6bfbbcecdd10fc493b6beaa0acdd4afeca3493fb69c8f58696288b60653c4",
+    "references/gbt7714_rules.md": "eb1b46d8fd3abeb472bbe228e98c5c312234c43506530cc1a03e84b7f8ed60b3",
+    "references/notes_template.md": "be86f01ebb9b5b4f19277ff95e9b92d7523423d81cab5a011e60e9585d0c0bcc",
+    "references/paper_data_schema.md": "4e41d414732a966e699488f4b46183edcc1a374d91dc930cbb42857e9013b95f",
+    "references/pass1_triage_guide.md": "32b95f9fe069f893e767cccc0fc985d803f893d0091dc51fcc2906a01eb5c52b",
+    "references/pass2_workflow_guide.md": "6b6bae42f67933710f0a683f741980e81c25f1289cf34ae49b08711359bd82ce",
+    "references/pass3_deep_mining_guide.md": "38da2837aa8ac64ec305692189ec395345dc198bfd65a6a11e8ad81908f0bd2d",
+    "references/theme_matrix_guide.md": "fb8608ba80567e6a95fb05363883073165ae391866bf250819d66fdb649caa5e",
+    "references/translation_rules.md": "5148408dfa02c93aeac6998c5629a7df92d7c7ca7a78f6a621a497429be717b4",
+    "scripts/deploy_reader.py": "cf746dd3fe1fafd8cfc4ec8cdd6e6f7502de0022b76a46ce31312417ac18a0dc",
+    "scripts/extract_pdf_assets.py": "1774bb46ce096a8be1e8bdf5194740f992b8bce0f8ae28131e1d135fcbe69d4e",
+    "scripts/html_to_pdf.py": "8f488afccc27fdf1d4784737182d9584bcfcd7089459babca7621c2cb35b45cf",
+    "scripts/md2docx.py": "38fded53fe4df7e2a025a50b14bec9bf8000b3598f940b97e98299b2a9c4cda9",
+    "scripts/open_reader.py": "c655c6bc11442c2edc172158b0d746fa0e7f5ac1b0d68787cd559a83141051f9",
+    "scripts/serve_reader.py": "83fba6d631f1f814e241358d53840e42a3bf4e8e88258ae23d6e169797411056",
+    "scripts/vault_manager.py": "ea44d60c6e738d80f6e65243c6d1bb1fcbad83f52e785db8104b1efba0250fc7"
+  },
+  "license_of_this_edition": "AGPL-3.0-only"
+}
