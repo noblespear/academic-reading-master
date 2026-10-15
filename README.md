@@ -26,7 +26,7 @@
 
 这是提供给 AI 智能体宿主使用的 **skill 目录**。论文检索、内容生成和周报写作由宿主执行；本地脚本负责文献管理、页面、批注队列和导出。
 
-1. 下载分发文件 `academic-reading-master-v3.0.0.skill`。它是 ZIP 容器，包含一个 `academic-reading-master/` 目录；若宿主支持该格式，可按其导入方式安装。
+1. 下载分发文件 `academic-reading-master-v3.0.0-agpl.skill`。它是 ZIP 容器，包含一个 `academic-reading-master/` 目录；若宿主支持该格式，可按其导入方式安装。
 2. 宿主不支持直接导入时，使用同内容的 `.zip` 文件，或将 `.skill` 的扩展名改为 `.zip` 后解压。把 `academic-reading-master/` 放入宿主的 skills 目录，确保 `SKILL.md` 位于该目录的顶层。例如，Codex 的用户 skills 目录可以使用 `~/.agents/skills/`。
 3. 按宿主的技能加载方式重新加载，然后在会话中提出任务。已有文献库时指定其位置；首次使用可让宿主创建 `PaperVault`。
 
@@ -103,4 +103,9 @@ python tools/package_skill.py --output dist
 
 命令生成 `.skill`、同内容 `.zip` 和 SHA-256 校验文件，只收录明确允许的源码与静态资源。论文库、运行状态、日志、缓存、截图、测试产物、Git 历史和凭据文件均不进入包。开源时仍应审查实际提交的文件，避免手动加入私人材料。
 
-本项目代码与说明采用 [MIT 许可证](LICENSE)。随包提供的 KaTeX 及字体保留其原许可证和归属，见[第三方资源说明](THIRD_PARTY_NOTICES.md)。论文及其图表属于各自权利人，分发 skill 不包含论文全文。
+本项目代码与说明采用 [AGPL-3.0-only 许可证](LICENSE)。随包提供的 KaTeX 及字体保留其原许可证和归属，见[第三方资源说明](THIRD_PARTY_NOTICES.md)。论文及其图表属于各自权利人，分发 skill 不包含论文全文。
+
+
+## AGPL 重发行说明
+
+本发行版保留 v3.0.0 的运行代码，只更新许可、版本后缀与发布说明。项目代码 Copyright (c) 2026 Academic Reading Master contributors，按 AGPL-3.0-only 许可；第三方版权与原许可保留。原始提交 `de250bdc5131168a19890ba40ae04f214bc1ce33` 与已发出的 MIT 授权保持历史事实，不作追溯撤回。当前推荐版本见 [v3.1.1](https://github.com/noblespear/academic-reading-master/releases/tag/v3.1.1)。
