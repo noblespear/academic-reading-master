@@ -1,0 +1,41 @@
+{
+  "preset": "theory",
+  "overview": [
+    {
+      "id": "problem",
+      "title": "问题背景",
+      "task": "待证明的问题、对象与现有结论覆盖不足。"
+    },
+    {
+      "id": "method",
+      "title": "方法框架",
+      "task": "真实假设、关键论证与结论依赖，用method_pipeline展示论证框架。"
+    },
+    {
+      "id": "innovation",
+      "title": "创新点",
+      "task": "新增命题、放宽假设、加强的界或证明思路。"
+    },
+    {
+      "id": "evaluation",
+      "title": "实验与效果",
+      "task": "主要定理及其证明、反例或实证；没有实验时如实说明。"
+    },
+    {
+      "id": "cost",
+      "title": "开销与论文边界",
+      "task": "成立假设与参数范围；涉及实现时区分理论复杂度和已测资源。"
+    }
+  ],
+  "explanation": [
+    {
+      "id": "source-section",
+      "title": "按原论文大章节展开",
+      "task": "保留原论文大章节及顺序，在对应位置补前提、中间推理和数学，随文插入并解释原图表。"
+    }
+  ],
+  "component_suggestions": [
+    "method_pipeline"
+  ],
+  "authoring_note": "日常只读 references/reader_workflow.md；本清单只定位待填内容，专题规则遇到对应问题再查。"
+}

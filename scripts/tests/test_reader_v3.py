@@ -7,6 +7,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -19,6 +20,7 @@ from deploy_reader import load_paper_data, validate_latex_structure
 from bridges.codex_app_server import CodexAppServerBridge
 from bridges.base import UnknownDelivery
 from migrate_reader_v3 import apply_anchor_map, migrate
+import open_reader
 
 
 def fixture(vault, paper="paper_a"):
@@ -32,6 +34,46 @@ def fixture(vault, paper="paper_a"):
             "text_en": "A vertex split is the inverse of edge collapse.", "text_zh": "顶点分裂是边塌缩的逆操作。", "source_refs": [{"page": 1}]}]}]}
     (directory / "paper-data.js").write_text("window.PAPER_DATA = " + json.dumps(data, ensure_ascii=False) + ";", encoding="utf-8")
     return directory
+
+
+class LauncherPathTests(unittest.TestCase):
+    def test_html_path_infers_vault_and_passes_it_to_v3(self):
+        with tempfile.TemporaryDirectory() as directory:
+            vault = Path(directory) / "another-library"
+            paper = fixture(vault, "fresh.paper")
+            with patch.object(sys, "argv", ["open_reader.py", str(paper / "reader.html"), "--no-open"]), \
+                    patch.object(open_reader, "open_v3", return_value=0) as launch:
+                with self.assertRaises(SystemExit) as exit_result:
+                    open_reader.main()
+            self.assertEqual(exit_result.exception.code, 0)
+            self.assertEqual(launch.call_args.args[:2], (paper.resolve(), vault.resolve()))
+
+    def test_explicit_conflicting_vault_fails_before_launch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paper = fixture(Path(directory) / "real-library")
+            with patch.object(sys, "argv", ["open_reader.py", str(paper / "reader.html"), "--vault", str(Path(directory) / "wrong-library")]), \
+                    patch.object(open_reader, "open_v3") as launch, patch.object(sys, "stderr") as stderr:
+                with self.assertRaises(SystemExit) as exit_result:
+                    open_reader.main()
+            self.assertEqual(exit_result.exception.code, 2)
+            launch.assert_not_called()
+            self.assertIn("HTML", "".join(call.args[0] for call in stderr.write.call_args_list))
+
+    def test_legacy_html_path_still_launches_legacy_service(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paper = fixture(Path(directory) / "legacy-library")
+            (paper / "paper-data.js").write_text('window.PAPER_DATA = {"schema_version":1};', encoding="utf-8")
+            with patch.object(sys, "argv", ["open_reader.py", str(paper / "reader.html")]), \
+                    patch.object(open_reader, "open_serve", return_value=0) as launch:
+                with self.assertRaises(SystemExit):
+                    open_reader.main()
+            self.assertEqual(launch.call_args.args, (paper.resolve(), paper.parent.parent.resolve(), paper.name))
+            standalone = Path(directory) / "standalone"
+            standalone.mkdir()
+            html = standalone / "reader.html"
+            html.write_text("legacy", encoding="utf-8")
+            explicit = Path(directory) / "chosen-library"
+            self.assertEqual(open_reader.resolve_vault_dir(str(html), str(explicit)), explicit.resolve())
 
 
 class StoreTests(unittest.TestCase):
@@ -146,7 +188,7 @@ class StoreTests(unittest.TestCase):
         self.store.expire_leases()
         self.assertEqual("unknown", self.store._task(two["id"])["state"])
         self.assertIsNone(self.store.claim("b1")["task"])
-        self.assertEqual("failed", self.store.get("paper_a", two["annotation_id"])["status"])
+        self.assertEqual("unknown", self.store.get("paper_a", two["annotation_id"])["status"])
 
     def test_explicit_retry_unlocks_unknown_without_automatic_replay(self):
         anno = self.create()["annotation"]
@@ -336,7 +378,7 @@ class HTTPTests(unittest.TestCase):
         for heads, token in (({}, False), ({"Origin": "https://evil.example"}, True), ({"Host": "evil.example"}, True)):
             with self.assertRaises(HTTPError) as caught:
                 self.request("/api/papers/paper_a/annotations", headers=heads, token=token)
-            self.assertEqual(403, caught.exception.code)
+            self.assertEqual(403 if token else 401, caught.exception.code)
         created = self.request("/api/papers/paper_a/annotations", "POST", {"user_note": "Question", "submit": False})[1]["annotation"]
         updated = self.request("/api/papers/paper_a/annotations/"+created["id"], "PATCH", {"revision": 1, "user_note": "Changed"})[1]["annotation"]
         self.assertEqual(2, updated["revision"])
@@ -364,7 +406,7 @@ class HTTPTests(unittest.TestCase):
     def test_bridge_credentials_are_distinct(self):
         with self.assertRaises(HTTPError) as caught:
             self.request("/api/bridge/register", "POST", {"bridge_id": "test", "adapter": "mock"})
-        self.assertEqual(403, caught.exception.code)
+        self.assertEqual(401, caught.exception.code)
         self.assertTrue(self.request("/api/bridge/register", "POST", {"bridge_id": "test", "adapter": "mock"},
             headers={"X-Reader-Token": self.server.bridge_token})[1]["ok"])
 
@@ -434,6 +476,7 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual("recovered", result["answer"])
         self.assertEqual(["thread/resume", "thread/read"], [c[0] for c in adapter.server.calls])
         self.assertNotIn("model", adapter.server.calls[0][1])
+        self.assertNotIn("effort", adapter.server.calls[0][1])
         self.assertEqual("read-only", adapter.server.calls[0][1]["sandbox"])
 
     def test_unknown_delivery_is_not_resubmitted(self):

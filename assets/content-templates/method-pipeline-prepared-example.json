@@ -1,0 +1,228 @@
+{
+  "id": "method-map",
+  "type": "method_pipeline",
+  "version": 1,
+  "title": "合成图像处理框架",
+  "evidence_kind": "teaching_example",
+  "config": {
+    "summary": "先读取与校正图像，分别提取轮廓和估计纹理，再合并表示并检查质量。质量检查可反馈给校正；纹理还依赖原始像素。这是自拟教学框架，不是任何论文结果。",
+    "nodes": [
+      {
+        "id": "input",
+        "label": "读取图像",
+        "summary": "读取像素和拍摄条件。",
+        "inputs": "一张原始图像，以及曝光等拍摄条件。",
+        "outputs": "原始像素数组和亮度参考。",
+        "column": 0,
+        "row": 0
+      },
+      {
+        "id": "prepare",
+        "label": "校正亮度",
+        "summary": "把亮度变化调整到可比较的范围。",
+        "inputs": "原始像素和拍摄条件；需要调整时的检查反馈。",
+        "outputs": "校正后的图像，分别供轮廓与纹理支路使用。",
+        "column": 1,
+        "row": 0
+      },
+      {
+        "id": "contour",
+        "label": "提取轮廓",
+        "summary": "从校正图像中提取形状边界。",
+        "inputs": "校正后的图像。",
+        "outputs": "形状边界位置组成的轮廓表示。",
+        "column": 2,
+        "row": 0
+      },
+      {
+        "id": "texture",
+        "label": "估计纹理",
+        "summary": "从图像中估计局部纹理。",
+        "inputs": "校正后的图像，以及保留的原始像素参考。",
+        "outputs": "描述局部区域内部差异的纹理表示。",
+        "column": 2,
+        "row": 1
+      },
+      {
+        "id": "merge",
+        "label": "合并表示",
+        "summary": "将轮廓与纹理放入共同表示。",
+        "inputs": "来自同一张图像的轮廓表示与纹理表示。",
+        "outputs": "同时包含形状边界和区域内部差异的合并表示。",
+        "column": 3,
+        "row": 0
+      },
+      {
+        "id": "check",
+        "label": "检查质量",
+        "summary": "检查合并表示是否保留所需细节。",
+        "inputs": "合并表示，以及本例预先设定的细节检查要求。",
+        "outputs": "本轮质量检查结论；不符合要求时的亮度校正建议。",
+        "column": 4,
+        "row": 0
+      }
+    ],
+    "edges": [
+      {
+        "id": "input-prepare",
+        "from": "input",
+        "to": "prepare",
+        "kind": "flow",
+        "label": "像素与条件",
+        "flow": "原始像素和拍摄条件从读取阶段送入校正阶段。",
+        "cause": "校正需要知道待处理像素及其亮度参考，才能调整拍摄条件造成的差异。"
+      },
+      {
+        "id": "prepare-contour",
+        "from": "prepare",
+        "to": "contour",
+        "kind": "branch",
+        "label": "校正图像",
+        "flow": "校正图像的一份输入交给轮廓提取支路。",
+        "cause": "轮廓提取需要可比较的图像，并负责保留纹理表示无法单独交代的形状边界；此分支不依赖纹理支路先完成。"
+      },
+      {
+        "id": "prepare-texture",
+        "from": "prepare",
+        "to": "texture",
+        "kind": "branch",
+        "label": "校正图像",
+        "flow": "同一校正图像的另一份输入交给纹理估计支路。",
+        "cause": "纹理估计负责区域内部差异，与轮廓支路互补；两条边表示分支，不表示轮廓结果流入纹理。"
+      },
+      {
+        "id": "contour-merge",
+        "from": "contour",
+        "to": "merge",
+        "kind": "flow",
+        "label": "轮廓表示",
+        "flow": "轮廓表示从轮廓提取阶段交给合并阶段。",
+        "cause": "合并需要形状边界信息，才能与纹理提供的区域内部差异放到共同表示中。"
+      },
+      {
+        "id": "texture-merge",
+        "from": "texture",
+        "to": "merge",
+        "kind": "flow",
+        "label": "纹理表示",
+        "flow": "纹理表示从纹理估计阶段交给合并阶段。",
+        "cause": "合并需要区域内部差异，并在轮廓表示和纹理表示都到齐后生成共同表示。"
+      },
+      {
+        "id": "merge-check",
+        "from": "merge",
+        "to": "check",
+        "kind": "flow",
+        "label": "合并表示",
+        "flow": "合并表示从合并阶段交给质量检查阶段。",
+        "cause": "检查对象必须是本轮合并结果，才能核对两条支路提供的细节是否保留。"
+      },
+      {
+        "id": "check-prepare",
+        "from": "check",
+        "to": "prepare",
+        "kind": "feedback",
+        "label": "调整建议",
+        "flow": "不符合检查要求时，质量检查把校正建议反馈给亮度校正阶段。",
+        "cause": "反馈用于下一次调整亮度校正条件；只有检查发现需要调整时才返回，不代表每次检查都重复校正。"
+      },
+      {
+        "id": "input-texture",
+        "from": "input",
+        "to": "texture",
+        "kind": "dependency",
+        "label": "原始像素参考",
+        "flow": "保留的原始像素为纹理估计提供参考。",
+        "cause": "这条边声明纹理估计对原始像素参考的依赖，不表示轮廓先于纹理执行，也不是质量提升的实验因果结论。"
+      }
+    ],
+    "reading_order": [
+      "input",
+      "prepare",
+      "contour",
+      "texture",
+      "merge",
+      "check"
+    ]
+  },
+  "fallback": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "fallback-summary",
+        "type": "paragraph",
+        "text_zh": "先读取与校正图像，分别提取轮廓和估计纹理，再合并表示并检查质量。质量检查可反馈给校正；纹理还依赖原始像素。这是自拟教学框架，不是任何论文结果。"
+      },
+      {
+        "id": "fallback-node-input",
+        "type": "paragraph",
+        "text_zh": "读取图像。概要：读取像素和拍摄条件。 输入：一张原始图像，以及曝光等拍摄条件。 输出：原始像素数组和亮度参考。"
+      },
+      {
+        "id": "fallback-node-prepare",
+        "type": "paragraph",
+        "text_zh": "校正亮度。概要：把亮度变化调整到可比较的范围。 输入：原始像素和拍摄条件；需要调整时的检查反馈。 输出：校正后的图像，分别供轮廓与纹理支路使用。"
+      },
+      {
+        "id": "fallback-node-contour",
+        "type": "paragraph",
+        "text_zh": "提取轮廓。概要：从校正图像中提取形状边界。 输入：校正后的图像。 输出：形状边界位置组成的轮廓表示。"
+      },
+      {
+        "id": "fallback-node-texture",
+        "type": "paragraph",
+        "text_zh": "估计纹理。概要：从图像中估计局部纹理。 输入：校正后的图像，以及保留的原始像素参考。 输出：描述局部区域内部差异的纹理表示。"
+      },
+      {
+        "id": "fallback-node-merge",
+        "type": "paragraph",
+        "text_zh": "合并表示。概要：将轮廓与纹理放入共同表示。 输入：来自同一张图像的轮廓表示与纹理表示。 输出：同时包含形状边界和区域内部差异的合并表示。"
+      },
+      {
+        "id": "fallback-node-check",
+        "type": "paragraph",
+        "text_zh": "检查质量。概要：检查合并表示是否保留所需细节。 输入：合并表示，以及本例预先设定的细节检查要求。 输出：本轮质量检查结论；不符合要求时的亮度校正建议。"
+      },
+      {
+        "id": "fallback-edge-input-prepare",
+        "type": "paragraph",
+        "text_zh": "读取图像→校正亮度（流程）。流转内容：原始像素和拍摄条件从读取阶段送入校正阶段。 关系为何成立：校正需要知道待处理像素及其亮度参考，才能调整拍摄条件造成的差异。"
+      },
+      {
+        "id": "fallback-edge-prepare-contour",
+        "type": "paragraph",
+        "text_zh": "校正亮度→提取轮廓（分支）。流转内容：校正图像的一份输入交给轮廓提取支路。 关系为何成立：轮廓提取需要可比较的图像，并负责保留纹理表示无法单独交代的形状边界；此分支不依赖纹理支路先完成。"
+      },
+      {
+        "id": "fallback-edge-prepare-texture",
+        "type": "paragraph",
+        "text_zh": "校正亮度→估计纹理（分支）。流转内容：同一校正图像的另一份输入交给纹理估计支路。 关系为何成立：纹理估计负责区域内部差异，与轮廓支路互补；两条边表示分支，不表示轮廓结果流入纹理。"
+      },
+      {
+        "id": "fallback-edge-contour-merge",
+        "type": "paragraph",
+        "text_zh": "提取轮廓→合并表示（流程）。流转内容：轮廓表示从轮廓提取阶段交给合并阶段。 关系为何成立：合并需要形状边界信息，才能与纹理提供的区域内部差异放到共同表示中。"
+      },
+      {
+        "id": "fallback-edge-texture-merge",
+        "type": "paragraph",
+        "text_zh": "估计纹理→合并表示（流程）。流转内容：纹理表示从纹理估计阶段交给合并阶段。 关系为何成立：合并需要区域内部差异，并在轮廓表示和纹理表示都到齐后生成共同表示。"
+      },
+      {
+        "id": "fallback-edge-merge-check",
+        "type": "paragraph",
+        "text_zh": "合并表示→检查质量（流程）。流转内容：合并表示从合并阶段交给质量检查阶段。 关系为何成立：检查对象必须是本轮合并结果，才能核对两条支路提供的细节是否保留。"
+      },
+      {
+        "id": "fallback-edge-check-prepare",
+        "type": "paragraph",
+        "text_zh": "检查质量→校正亮度（反馈）。流转内容：不符合检查要求时，质量检查把校正建议反馈给亮度校正阶段。 关系为何成立：反馈用于下一次调整亮度校正条件；只有检查发现需要调整时才返回，不代表每次检查都重复校正。"
+      },
+      {
+        "id": "fallback-edge-input-texture",
+        "type": "paragraph",
+        "text_zh": "读取图像→估计纹理（依赖）。流转内容：保留的原始像素为纹理估计提供参考。 关系为何成立：这条边声明纹理估计对原始像素参考的依赖，不表示轮廓先于纹理执行，也不是质量提升的实验因果结论。"
+      }
+    ]
+  }
+}

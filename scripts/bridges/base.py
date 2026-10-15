@@ -10,7 +10,18 @@ class UnknownDelivery(RuntimeError):
     """The host may have accepted this turn; do not submit it again."""
 
 
+class ConfirmedFailure(RuntimeError):
+    """The host confirmed a terminal failed/interrupted turn or rejected send."""
+
+
 class HostBridge(ABC):
+    def health(self):
+        # Initialization verifies transport, never credentials/model availability.
+        return {"health": "unknown", "image_input": "unsupported"}
+
+    def recheck(self):
+        """Explicit connection inspection; no test model turns."""
+        return self.health()
     @abstractmethod
     def session(self, paper_dir, thread_id=None):
         """Start or resume and return a durable host thread id."""

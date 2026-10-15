@@ -1,0 +1,2087 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "content-types.schema.json",
+  "title": "Reader v3.1 shared safe content types",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+    },
+    "document": {
+      "type": "object",
+      "required": [
+        "version",
+        "blocks"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/nestedBlock"
+          }
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+        },
+        "type": {
+          "enum": [
+            "paragraph",
+            "para",
+            "heading",
+            "list",
+            "figure",
+            "diagram",
+            "formula",
+            "table",
+            "algorithm",
+            "code",
+            "quote",
+            "details",
+            "learning_aid",
+            "separator"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "text_zh": {
+          "type": "string"
+        },
+        "text_en": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "title_cn": {
+          "type": "string"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "block_id": {
+                "type": "string"
+              },
+              "content_id": {
+                "type": "string"
+              },
+              "source_id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "evidence_kind": {
+          "enum": [
+            "paper",
+            "translation",
+            "general_background",
+            "ai_explanation",
+            "teaching_example"
+          ]
+        },
+        "src": {
+          "type": "string",
+          "pattern": "^(?![A-Za-z]+:)(?![/\\\\])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$)).+\\.(?:png|jpe?g|webp|gif|svg)$"
+        },
+        "asset": {
+          "type": "string"
+        },
+        "latex": {
+          "type": "string",
+          "minLength": 1
+        },
+        "caption": {
+          "type": "string"
+        },
+        "caption_zh": {
+          "type": "string"
+        },
+        "caption_en": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "object",
+                "anyOf": [
+                  {
+                    "required": [
+                      "text"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "text_zh"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "text_en"
+                    ]
+                  }
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "text_zh": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "text_en": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "number"
+              ]
+            }
+          }
+        },
+        "rows_zh": {
+          "type": "array"
+        },
+        "rows_en": {
+          "type": "array"
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "code": {
+          "type": "string"
+        },
+        "lines": {
+          "type": "array"
+        },
+        "algo_lines": {
+          "type": "array"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nestedBlock"
+          }
+        },
+        "aid": {
+          "$ref": "#/$defs/aid"
+        },
+        "aid_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+        },
+        "placement": {
+          "const": "body",
+          "description": "Only top-level overview/explanation learning_aids may be part of the main paper explanation; never allowed in nested rich documents."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "paragraph",
+                  "para",
+                  "heading"
+                ]
+              }
+            }
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "text"
+                ]
+              },
+              {
+                "required": [
+                  "text_zh"
+                ]
+              },
+              {
+                "required": [
+                  "text_en"
+                ]
+              },
+              {
+                "required": [
+                  "title"
+                ]
+              },
+              {
+                "required": [
+                  "title_cn"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "formula"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "latex"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "figure",
+                  "diagram"
+                ]
+              }
+            }
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "src"
+                ]
+              },
+              {
+                "required": [
+                  "asset"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "list"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "items"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "table"
+              }
+            }
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "rows"
+                ]
+              },
+              {
+                "required": [
+                  "rows_zh"
+                ]
+              },
+              {
+                "required": [
+                  "rows_en"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "code",
+                  "algorithm"
+                ]
+              }
+            }
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "code"
+                ]
+              },
+              {
+                "required": [
+                  "text"
+                ]
+              },
+              {
+                "required": [
+                  "lines"
+                ]
+              },
+              {
+                "required": [
+                  "algo_lines"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "details"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "blocks"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "summary"
+                ]
+              },
+              {
+                "required": [
+                  "title"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "learning_aid"
+              }
+            }
+          },
+          "then": {
+            "oneOf": [
+              {
+                "required": [
+                  "aid"
+                ],
+                "not": {
+                  "required": [
+                    "aid_id"
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "aid_id"
+                ],
+                "not": {
+                  "required": [
+                    "aid"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "quote"
+              }
+            }
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "text"
+                ]
+              },
+              {
+                "required": [
+                  "text_zh"
+                ]
+              },
+              {
+                "required": [
+                  "text_en"
+                ]
+              },
+              {
+                "required": [
+                  "blocks"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "placement"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "const": "learning_aid"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "aid": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "version",
+        "evidence_kind",
+        "config"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+        },
+        "type": {
+          "enum": [
+            "concept_cards",
+            "formula_explorer",
+            "steps",
+            "parameter_explorer",
+            "prediction",
+            "lru_cache",
+            "concept_card",
+            "step_walkthrough",
+            "cache_walkthrough",
+            "graph_walkthrough",
+            "comparison_chart",
+            "weighted_degree",
+            "method_pipeline"
+          ]
+        },
+        "version": {
+          "const": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "evidence_kind": {
+          "enum": [
+            "teaching_example",
+            "paper"
+          ]
+        },
+        "config": {
+          "type": "object"
+        },
+        "fallback": {
+          "$ref": "#/$defs/document"
+        },
+        "fallback_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "fallback"
+          ]
+        },
+        {
+          "required": [
+            "fallback_text"
+          ]
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "concept_cards",
+                  "concept_card"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "type": "object",
+                "required": [
+                  "concept_ids"
+                ],
+                "properties": {
+                  "concept_ids": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "uniqueItems": true,
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "steps",
+                  "step_walkthrough"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "type": "object",
+                "required": [
+                  "steps"
+                ],
+                "properties": {
+                  "initial_step": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "steps": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "title"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "blocks": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "$ref": "#/$defs/nestedBlock"
+                          }
+                        }
+                      },
+                      "anyOf": [
+                        {
+                          "required": [
+                            "text"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "blocks"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "formula_explorer",
+                  "parameter_explorer"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "type": "object",
+                "required": [
+                  "parameters",
+                  "result_label"
+                ],
+                "properties": {
+                  "parameters": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "label",
+                        "min",
+                        "max",
+                        "step",
+                        "value"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "min": {
+                          "type": "number"
+                        },
+                        "max": {
+                          "type": "number"
+                        },
+                        "step": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "value": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "result_label": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "latex": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "symbols": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "symbol",
+                        "meaning"
+                      ],
+                      "properties": {
+                        "symbol": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "meaning": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "unit": {
+                          "type": "string"
+                        },
+                        "shape": {
+                          "type": "string"
+                        },
+                        "range": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "expression": {
+                    "$ref": "#/$defs/expression"
+                  },
+                  "model": {
+                    "const": "ratio"
+                  },
+                  "numerator": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                      }
+                    ]
+                  },
+                  "denominator": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                      }
+                    ]
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "expression"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "model",
+                      "numerator",
+                      "denominator"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "prediction"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "type": "object",
+                "required": [
+                  "question",
+                  "choices"
+                ],
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "correct_choice_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                  },
+                  "correct_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                  },
+                  "explanation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "choices": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "feedback"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "feedback": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "anyOf": [
+                        {
+                          "required": [
+                            "text"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "label"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "correct_choice_id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "correct_id"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "lru_cache",
+                  "cache_walkthrough"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "type": "object",
+                "required": [
+                  "capacity"
+                ],
+                "properties": {
+                  "capacity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 64
+                  },
+                  "min_capacity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 64
+                  },
+                  "max_capacity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 64
+                  },
+                  "sequence": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  },
+                  "requests": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "sequence"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "requests"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evidence_kind": {
+                "const": "paper"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "source_refs"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "comparison_chart",
+                  "method_pipeline"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "graph_walkthrough"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "type": "object",
+                "required": [
+                  "nodes",
+                  "edges",
+                  "stages"
+                ],
+                "properties": {
+                  "nodes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "label"
+                      ],
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "round": {
+                          "type": "string"
+                        },
+                        "detail": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "minItems": 1,
+                    "maxItems": 60
+                  },
+                  "edges": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "from",
+                        "to"
+                      ],
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "from": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "to": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "kind": {
+                          "enum": [
+                            "intra",
+                            "inter"
+                          ]
+                        },
+                        "label": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "minItems": 0,
+                    "maxItems": 200
+                  },
+                  "stages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "title",
+                        "text",
+                        "active_node_ids",
+                        "active_edge_ids"
+                      ],
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "title": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "text": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "active_node_ids": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/id"
+                          },
+                          "uniqueItems": true
+                        },
+                        "active_edge_ids": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/id"
+                          },
+                          "uniqueItems": true
+                        },
+                        "highlight_node_ids": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/id"
+                          },
+                          "uniqueItems": true
+                        },
+                        "highlight_edge_ids": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/id"
+                          },
+                          "uniqueItems": true
+                        },
+                        "node_annotations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "node_id",
+                              "text"
+                            ],
+                            "properties": {
+                              "node_id": {
+                                "$ref": "#/$defs/id"
+                              },
+                              "text": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            }
+                          },
+                          "minItems": 0,
+                          "maxItems": 200
+                        },
+                        "edge_annotations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "edge_id",
+                              "text"
+                            ],
+                            "properties": {
+                              "edge_id": {
+                                "$ref": "#/$defs/id"
+                              },
+                              "text": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            }
+                          },
+                          "minItems": 0,
+                          "maxItems": 200
+                        }
+                      }
+                    },
+                    "minItems": 1,
+                    "maxItems": 40
+                  },
+                  "initial_stage": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "aria_summary": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "comparison_chart"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "type": "object",
+                "required": [
+                  "metric_label",
+                  "unit",
+                  "models",
+                  "tasks",
+                  "series",
+                  "observations"
+                ],
+                "properties": {
+                  "metric_label": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "unit": {
+                    "const": "%"
+                  },
+                  "models": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "label"
+                      ],
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "minItems": 1,
+                    "maxItems": 30
+                  },
+                  "tasks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "label",
+                        "description",
+                        "denominator"
+                      ],
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "description": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "denominator": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  },
+                  "series": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "label"
+                      ],
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "minItems": 1,
+                    "maxItems": 12
+                  },
+                  "observations": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "model_id",
+                        "task_id",
+                        "series_id",
+                        "value"
+                      ],
+                      "properties": {
+                        "model_id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "task_id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "series_id": {
+                          "$ref": "#/$defs/id"
+                        },
+                        "value": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      }
+                    },
+                    "minItems": 1,
+                    "maxItems": 10000
+                  },
+                  "default_model_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "default_task_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "baseline_series_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "weighted_degree"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evidence_kind": {
+                "const": "teaching_example"
+              },
+              "config": {
+                "type": "object",
+                "required": [
+                  "nodes",
+                  "edges",
+                  "adjustable_edge_id",
+                  "tie_break"
+                ],
+                "properties": {
+                  "nodes": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "label"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 12
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "edges": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "from",
+                        "to",
+                        "weight"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                        },
+                        "from": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                        },
+                        "to": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                        },
+                        "weight": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1,
+                          "enum": [
+                            0.0,
+                            0.1,
+                            0.2,
+                            0.3,
+                            0.4,
+                            0.5,
+                            0.6,
+                            0.7,
+                            0.8,
+                            0.9,
+                            1.0
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "adjustable_edge_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                  },
+                  "selected_node_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+                  },
+                  "initial_mode": {
+                    "enum": [
+                      "all",
+                      "prune_one"
+                    ]
+                  },
+                  "tie_break": {
+                    "const": "node_order"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "method_pipeline"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "$ref": "#/$defs/methodPipelineConfig"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expression": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "object",
+          "required": [
+            "parameter"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "parameter": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "op",
+            "args"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "enum": [
+                "add",
+                "subtract",
+                "multiply",
+                "divide",
+                "power",
+                "sum",
+                "mean"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "$ref": "#/$defs/expression"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "reasoningStep": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "latex": {
+          "type": "string",
+          "minLength": 1
+        },
+        "condition": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "example": {
+      "type": "object",
+      "required": [
+        "evidence_kind",
+        "input",
+        "steps",
+        "result",
+        "interpretation"
+      ],
+      "properties": {
+        "evidence_kind": {
+          "const": "teaching_example"
+        },
+        "kind": {
+          "enum": [
+            "numeric",
+            "object",
+            "counterexample",
+            "proof"
+          ]
+        },
+        "input": {
+          "type": "string",
+          "minLength": 1
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/reasoningStep"
+              }
+            ]
+          }
+        },
+        "result": {
+          "type": "string",
+          "minLength": 1
+        },
+        "interpretation": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "formulaExplanation": {
+      "type": "object",
+      "required": [
+        "id",
+        "purpose",
+        "symbols",
+        "operations",
+        "steps",
+        "example",
+        "variation",
+        "boundary",
+        "paper_connection"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+        },
+        "formula_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+        },
+        "source_formula_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "explanation_kind": {
+          "enum": [
+            "calculation",
+            "definition",
+            "constraint",
+            "proof"
+          ]
+        },
+        "symbols": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "symbol",
+              "meaning"
+            ],
+            "properties": {
+              "symbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "meaning": {
+                "type": "string",
+                "minLength": 1
+              },
+              "unit": {
+                "type": "string"
+              },
+              "shape": {
+                "type": "string"
+              },
+              "range": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "operator",
+              "meaning"
+            ],
+            "properties": {
+              "operator": {
+                "type": "string",
+                "minLength": 1
+              },
+              "meaning": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/reasoningStep"
+          }
+        },
+        "example": {
+          "$ref": "#/$defs/example"
+        },
+        "variation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "boundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paper_connection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "block_id": {
+                "type": "string"
+              },
+              "content_id": {
+                "type": "string"
+              },
+              "source_id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "formula_ref"
+          ]
+        },
+        {
+          "required": [
+            "source_formula_id"
+          ]
+        }
+      ]
+    },
+    "learning": {
+      "type": "object",
+      "required": [
+        "id",
+        "plain_summary"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+        },
+        "plain_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "concept_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "aid_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "formula_explanations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/formulaExplanation"
+          }
+        },
+        "example": {
+          "$ref": "#/$defs/example"
+        },
+        "analogy": {
+          "type": "object",
+          "required": [
+            "text",
+            "mappings",
+            "boundary"
+          ],
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "boundary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mappings": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "everyday",
+                  "paper"
+                ],
+                "properties": {
+                  "everyday": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "paper": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nestedBlock"
+          }
+        },
+        "presentation": {
+          "const": "narrative"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "presentation"
+            ],
+            "properties": {
+              "presentation": {
+                "const": "narrative"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "blocks"
+            ]
+          }
+        }
+      ]
+    },
+    "concept": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "context_meaning",
+        "plain_definition"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context_meaning": {
+          "type": "string",
+          "minLength": 1
+        },
+        "plain_definition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prerequisite_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "uniqueItems": true
+        },
+        "example": {
+          "type": "string"
+        }
+      }
+    },
+    "defaultAnnotation": {
+      "deprecated": true,
+      "description": "Ignored legacy preloaded annotation metadata. New content omits it; Reader 3.4 does not display, count, or attach it to questions."
+    },
+    "nestedBlock": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/block"
+        },
+        {
+          "not": {
+            "required": [
+              "placement"
+            ]
+          }
+        }
+      ]
+    },
+    "methodPipelineConfig": {
+      "description": "Complete directed method framework. Grid positions define desktop layout; reading_order controls navigation, never execution. Semantic coverage requires human review.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "nodes",
+        "edges"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 40,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "summary",
+              "inputs",
+              "outputs",
+              "column",
+              "row"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "why_needed": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "handoff": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "column": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 39
+              },
+              "row": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 39
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "inputs": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000,
+                "description": "Concrete input objects, information, assumptions or conditions needed by this stage."
+              },
+              "outputs": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000,
+                "description": "Concrete products or conclusions this stage provides; do not substitute its role."
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 120,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "from",
+              "to",
+              "kind",
+              "label",
+              "flow",
+              "cause"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/id"
+              },
+              "from": {
+                "$ref": "#/$defs/id"
+              },
+              "to": {
+                "$ref": "#/$defs/id"
+              },
+              "kind": {
+                "enum": [
+                  "flow",
+                  "branch",
+                  "feedback",
+                  "dependency"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "flow": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000,
+                "description": "What this directed relationship transfers or supplies."
+              },
+              "cause": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000,
+                "description": "Why the downstream stage needs this information, or why this relationship holds. Dependency is not automatically experimental causation."
+              }
+            }
+          }
+        },
+        "reading_order": {
+          "description": "Optional permutation of all node IDs for previous/next reading navigation; does not imply a linear method.",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 40,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    }
+  }
+}

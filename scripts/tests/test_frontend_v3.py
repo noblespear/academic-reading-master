@@ -212,6 +212,7 @@ def main():
         # Source jumps and reading position are independent in each view.
         page.locator('#panel-close').click()
         page.locator('[data-view="overview"]').click()
+        page.locator('[data-block-id="ov-summary"] .source-details > summary').click()
         page.get_by_role('button',name='引言 · 第 1 段',exact=True).click()
         page.wait_for_function('ReaderV3.getState().view === "translation"')
         page.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')

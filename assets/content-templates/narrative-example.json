@@ -1,0 +1,137 @@
+{
+  "example_kind": "teaching_fragment_not_a_paper",
+  "authoring_note": "这是技术机制正文与类比补充的讲述样板，不是完整论文或实验报告。正文直接讲缓存工作过程；取书比喻、假设请求和试算放AI说人话。实际生成时替换为本篇机制和来源，批注仅由用户主动创建。 body_visual对应文件位于本样板目录的example-assets/lru-mechanism.svg，采用样板时将它复制到论文assets目录；图默认可见。",
+  "body": {
+    "id": "example-body",
+    "type": "paragraph",
+    "evidence_kind": "general_background",
+    "text_zh": "缓存把已经读取的数据保存在容量有限、访问更快的存储空间中。新的请求到达时，系统先根据数据的标识查找已有内容；找到就直接返回，这称为命中。没有找到则需要从原存储位置读取，这称为未命中。新数据通常还会被放入缓存，以便后续请求复用。\n\n容量有限使插入操作还需要回答另一个问题：空间已满时移出谁？LRU（Least Recently Used，最近最少使用）根据每项数据最后一次被访问的时间作选择，移出其中最久没有被访问的一项。因此，缓存除了保存数据，还必须维护访问先后关系；每次命中要更新这项记录，每次插入也要把新项记为最近访问。它关注的是最后访问时间，而不是最初放入时间。\n\n这一机制利用近期访问记录决定淘汰顺序，不能提前知道未来请求。若工作负载的访问规律变化，刚移出的项仍可能很快再次被请求。要判断LRU是否有用，必须记录实际请求中的命中情况，并结合读取代价衡量性能。下面把查找、更新记录和空间不足时的淘汰放在同一条流程中。",
+    "learning": {
+      "id": "example-plain",
+      "presentation": "narrative",
+      "plain_summary": "用桌上三本常用书解释容量有限时怎样腾位置。",
+      "blocks": [
+        {
+          "id": "scene",
+          "type": "paragraph",
+          "evidence_kind": "teaching_example",
+          "text_zh": "想象你的书桌只放得下三本书，书架在房间另一头。正在看的书放桌上，下一次用时就不用起身去找。现在桌上有数学书、英语书和历史书，你又想把物理书拿过来。桌子没有变大，所以必须先把一本书放回书架。"
+        },
+        {
+          "id": "choice",
+          "type": "paragraph",
+          "evidence_kind": "teaching_example",
+          "text_zh": "该收走哪一本？这里的办法是看最近有没有用过它们。假设你刚翻过数学书，五分钟前查过英语书，历史书从昨天起就没动过，那么先收走历史书。下一次需要历史书时还可以去书架取，只是要多跑一趟；它并没有从世界上消失。"
+        },
+        {
+          "id": "try",
+          "type": "paragraph",
+          "evidence_kind": "teaching_example",
+          "text_zh": "在下面的演示中，把容量留在3，按“下一步”依次查看数学书、英语书、历史书，再翻数学书和英语书。到第6次取物理书时，注意哪一本被移出；随后第7次又取历史书，看看为什么要再找一次。"
+        },
+        {
+          "id": "desk-demo",
+          "type": "learning_aid",
+          "aid_id": "desk-lru"
+        },
+        {
+          "id": "return",
+          "type": "paragraph",
+          "evidence_kind": "ai_explanation",
+          "text_zh": "回到上面这句话：书桌对应缓存，三本书对应最多同时保存三项，收走历史书对应腾出一个位置。这个规则利用最近的使用记录作选择，并不知道你下一刻真正需要什么。如果下一次恰好又查历史书，它就会选错。计算机里的对象是数据，读取代价也由具体系统决定，因此这个比喻只能解释选择规则，不能告诉我们实际能快多少。"
+        }
+      ]
+    }
+  },
+  "learning_catalog": {
+    "aids": [
+      {
+        "id": "desk-lru",
+        "type": "lru_cache",
+        "version": 1,
+        "title": "书桌满了，先把哪本书收走？",
+        "evidence_kind": "teaching_example",
+        "config": {
+          "sequence": [
+            "数学书",
+            "英语书",
+            "历史书",
+            "数学书",
+            "英语书",
+            "物理书",
+            "历史书"
+          ],
+          "capacity": 3,
+          "min_capacity": 1,
+          "max_capacity": 4
+        },
+        "fallback": {
+          "version": 1,
+          "blocks": [
+            {
+              "id": "fallback",
+              "type": "paragraph",
+              "text_zh": "容量3时，前3次把三本书放满桌面；第4、5次重新用数学书与英语书。第6次取物理书时移出历史书，第7次再取历史书需要重新找书并移出数学书。共有2次直接在桌上找到书。这是教学计数，不代表实际系统提速。"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "formula_example": {
+    "version": 1,
+    "blocks": [
+      {
+        "id": "why-count-hits",
+        "type": "paragraph",
+        "evidence_kind": "general_background",
+        "text_zh": "评价缓存首先需要区分请求总量和其中直接找到数据的请求量。对同一段记录，把每次请求都计入总数，再只累计命中的请求；两者的比值说明缓存直接满足了多少比例的访问。下面用符号写清这一统计口径。"
+      },
+      {
+        "id": "hit-rate",
+        "type": "formula",
+        "evidence_kind": "general_background",
+        "latex": "h=\\frac{H}{R},\\qquad R>0",
+        "text_zh": "这里的 \\(H\\) 是直接找到数据的次数，\\(R\\) 是全部请求次数，\\(h\\) 表示其中有多大一部分不必再从外部取数据。分母需要大于零；一次请求都没有时，这个比率还没有定义。把 \\(h\\) 乘以100就得到百分数。这一计数只能衡量命中比例，不能直接告诉我们运行快了多少。",
+        "learning": {
+          "id": "hit-rate-plain",
+          "presentation": "narrative",
+          "plain_summary": "七次取书里，哪几次直接在桌上找到？",
+          "blocks": [
+            {
+              "id": "hit-scene",
+              "type": "paragraph",
+              "evidence_kind": "teaching_example",
+              "text_zh": "还是这张只能放三本书的桌子。我们连续七次拿书，不关心一本书有多少页，只数这次伸手时要找的书在不在桌上。第4次找数学书、第5次找英语书，都能直接拿到；其余五次需要去书架。"
+            },
+            {
+              "id": "hit-compute",
+              "type": "paragraph",
+              "evidence_kind": "teaching_example",
+              "text_zh": "于是 \\(H=2\\)、\\(R=7\\)，命中率 \\(h=2/7\\approx0.286\\)，约28.6%。下面把容量留在3，走完七次取书，亲自找出这两次；再把容量改成4，从头走一遍，看看什么改变了。"
+            },
+            {
+              "id": "hit-desk-demo",
+              "type": "learning_aid",
+              "aid_id": "desk-lru"
+            },
+            {
+              "id": "hit-return",
+              "type": "paragraph",
+              "evidence_kind": "teaching_example",
+              "text_zh": "容量为4时，物理书可以直接留在桌上，不必挤走历史书。第7次再拿历史书也能直接找到，所以这时 \\(H=3\\)、\\(R=7\\)，命中率变成 \\(3/7\\approx42.9\\%\\)。改变的是直接找到的次数，七次取书这个分母没有变。回到公式，分子和分母各自对应了明确动作；实际能节省多久，还取决于每次取书需要多少时间。"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "body_visual": {
+    "id": "example-body-flow",
+    "type": "diagram",
+    "src": "assets/lru-mechanism.svg",
+    "evidence_kind": "general_background",
+    "caption_zh": "LRU的实际处理关系：命中后更新访问顺序；未命中则读取数据，空间满时移出最久未访问项，再插入新项。",
+    "alt": "从请求查找到命中返回或未命中读取、淘汰、插入的处理流程"
+  }
+}

@@ -45,3 +45,7 @@ node_modules/
 Thumbs.db
 .idea/
 .vscode/
+
+# Private installed upstream snapshots without a public redistribution grant
+vendor/visualize/
+vendor/visualize-source.json

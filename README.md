@@ -1,106 +1,82 @@
-# Academic Reading Master
+# Academic Reading Master 3.1.1
 
-面向**新晋研究生、刚开始科研的本科生，以及需要建立论文阅读方法的科研新手**的论文阅读 skill。
+面向科研新手的论文阅读skill：搜集核验论文，生成概览、原章详解，并通过固定阅读器批注提问与持续追问。全文双语翻译按需生成。
 
-从找到值得读的论文开始，帮助读者理解研究问题与方法、对照原文提问，再把阅读和实际研究进展整理为可以提交的周报。讲解重视必要背景、术语含义、公式用途和证据，让新手逐步学会判断与表达。
+## 阅读方式
 
-## 可以做什么
+正文是唯一教学主线，展开隐藏前提、概念、公式和证据，随文使用例子、比喻与试算。概览五节接成问题缘由、方法流转、创新突破、实验证据及使用代价与边界的连续讲述。先按图已在位完成连续正文，再插入图片；额外读图提示以引用式字体放在图下。专业英文术语首次出现即对应中文译名。概览与详解省去逐段来源入口，保留顶部原文PDF。较长支线就地折叠，新稿不再生成独立AI说人话或全局开关。旧阅读器的补充和历史问答仍兼容显示。
 
-| 功能 | 使用方式与产物 |
+默认成品为“正文讲清楚、简洁方法总图、相关原图表、必要局部图”。总图按功能模块组织，内部计算默认隐藏；点击节点或连线后在图下显示职责、输入输出、正文入口或传递与依赖，说明自然展开。图按页面宽度排布，窄屏纵向展示。其他交互只响应明确需求，仅文字翻页的steps默认不生成。公式采用无底色、无框的紧凑论文排版。单篇任务只填内容，不开发共享组件。
+
+规划、编写、翻译、图形、独立审阅和批注均沿用宿主默认模型与推理设置，不按职责分配模型或档位；用户明确指定时覆盖。批注先解决当前疑问，输出文字、LaTeX、小表格或代码，并保留来源与连续追问。原图仍能理解，批注不自动生成新的图或学习组件。
+
+日常创作只加载[短指南](references/reader_workflow.md)，正文质量、原图解释、装配与复验统一在一处；组件字段、复杂证据和异常处理遇到时查。首次验收后只复查改动及其依赖。问答默认使用选区、必要历史及概览与详解，不附全文翻译或原文全文；相关原文与图像按需补充。同一论文的新批注和追问复用持续答疑会话；正文初始化发送一次，后续只补问题、必要选区和变化块，正常提问不重复恢复会话或加载整套规则。
+
+新稿保留“翻译”视图，打开页面仅查看状态；用户明确点击“生成完整双语翻译”才启动模型。生成期间可继续阅读正文，完成后载入对照内容，原有块ID与批注保留。失败或中断不会在重启后自动重放；执行结果未知时先核对已有会话。已有全文翻译继续直接阅读。
+
+## 功能
+
+| 功能 | 产物与用法 |
 |---|---|
-| 论文搜集 | 按主题检索，或导入 PDF、链接、DOI、标题；记录来源、筛选理由与全文获取状态，去重后保存书目 |
-| 一体化阅读 | 同一网页切换**概览、详解、翻译**，分别记住阅读位置；译文与英文按段落、公式和图表对齐，共享滚动容器，保留原 PDF 入口 |
-| 批注答疑 | 三个视图均可划词提问，图表和公式可整块批注；问题提交后自动排队，答案显示在可折叠问答浮层，完成时提示新回答 |
-| 连续追问 | 在原批注中继续提问、编辑、删除或重试；同一论文复用答疑会话，刷新后保留问答历史 |
-| 调研类周报 | 根据选定论文、最终 HTML 与批注互动，整理方法比较、证据、阶段认识和下一步，输出 `.md` |
-| 工作类周报 | 根据实际实验、开发或排障记录，说明目标、实施过程、结果与问题，输出 `.md` |
-| 个人讲解说明 | 默认与周报配套输出另一份 `.md`，解释被压缩的推理过程，并准备老师可能追问的问题 |
+| 搜集核验 | 主题检索或PDF、DOI、标题导入，记录全文状态、来源和筛选依据 |
+| 三视图阅读 | 概览、详解、按需全文翻译，保留原PDF与各自阅读位置 |
+| 正文图文 | 可点击方法框架、局部机制、数学说明与结果比较 |
+| 批注答疑 | 划词或整块提问，自动排队、通知、追问、历史与连接恢复 |
+| 研究周报 | 根据实际论文阅读、互动或实验开发记录生成Markdown周报与配套讲解 |
+| 跨论文比较 | 基于核验资料增量整理主题矩阵 |
 
-周报默认约 **1500–2500 字**，按实际内容调整，以连贯文字为主，并用简洁易懂的图表辅助关键判断。章节结构随调研、实验、开发或探索任务调整，标题采用客观、范围明确的学术表述。正文体现认识如何推进、判断依据是什么；参考文献按需要保留。
+周报默认1500–2500字，按实际材料调整；论点与真实证据相连，AI解释不能冒充读者已验证的成果。数学使用本地KaTeX严格渲染，导出Markdown保留可编辑LaTeX。
 
-个人讲解面向读者自己，展开研究目标、共性困难、主要研究方向、所用方法、指标与效果评定。关键问题先给可以口头表达的短答，再解释机制、证据和适用边界。
+## 安装
 
-所有数学内容使用严格 LaTeX，阅读器采用随包提供的本地 KaTeX 渲染。导出包含公式的 Markdown 时会调用同版本 KaTeX 校验表达式。
+下载academic-reading-master-v3.1.1.skill或同内容.zip。它们是包含academic-reading-master目录的ZIP容器。宿主支持时按其方式导入；否则解压完整目录到skills位置，例如~/.agents/skills/。源码安装也须保留assets、scripts、schemas、vendor和许可，不复制测试输出或论文库。
 
-## 安装与开始使用
+升级前备份现有安装目录；替换后重新加载skill。已有论文按迁移指南保留认可正文、块ID和历史，不自动批量改写。历史版本通过Git标签与Release保留，见下表。
 
-这是提供给 AI 智能体宿主使用的 **skill 目录**。论文检索、内容生成和周报写作由宿主执行；本地脚本负责文献管理、页面、批注队列和导出。
+## 使用
 
-1. 下载分发文件 `academic-reading-master-v3.0.1.skill`。它是 ZIP 容器，包含一个 `academic-reading-master/` 目录；若宿主支持该格式，可按其导入方式安装。
-2. 宿主不支持直接导入时，使用同内容的 `.zip` 文件，或将 `.skill` 的扩展名改为 `.zip` 后解压。把 `academic-reading-master/` 放入宿主的 skills 目录，确保 `SKILL.md` 位于该目录的顶层。例如，Codex 的用户 skills 目录可以使用 `~/.agents/skills/`。
-3. 按宿主的技能加载方式重新加载，然后在会话中提出任务。已有文献库时指定其位置；首次使用可让宿主创建 `PaperVault`。
+> 阅读这个PDF，生成概览和按原章节详解，让我在网页里直接提问；全文翻译等我按按钮再生成。
 
-也可以从源代码安装：将仓库根目录中的 `SKILL.md`、`assets/`、`references/`、`scripts/` 一同放入名为 `academic-reading-master` 的技能目录。没有必要复制开发测试产物。
+> 根据本周阅读和实验记录写研究周报，并提供详细讲解。
 
-可以直接这样提问：
+完整创作和局部修订统一按[日常创作短指南](references/reader_workflow.md)执行，不预读全套手册。新内容合同为3.2，数据schema仍为3；3.1和无标记旧稿继续兼容。
 
-> 使用 academic-reading-master，围绕我的研究主题寻找适合入门的论文，说明每篇推荐理由和阅读难度。
+    python scripts/init_reading_content.py --paper-id <id> --preset method --output <论文目录>/paper-data.js
+    python scripts/prepare_method_pipeline.py --input <骨架.json> --output <组件.json>
+    python scripts/deploy_reader.py --vault <库> --paper <id> --preview --preview-dir <隔离目录>
+    python scripts/deploy_reader.py --vault <库> --paper <id>
+    python scripts/open_reader.py --vault <库> <id>
 
-> 阅读这个 PDF，生成概览、详解和逐段中英对照，让我在网页里直接批注提问。
+草稿预览只按返回HTML入口或静态服务器查看，不启动正式答疑，不写用户状态。正常部署仍要求真实内容审阅。关闭网页后已提交任务可在后台继续；停止：
 
-> 根据这些论文的最终 HTML、批注和追问，写本周调研类周报，配上必要图表，并附一份给我自己看的详细讲解。
+    python scripts/open_reader.py --vault <库> --stop
 
-> 根据这些实验日志写工作类周报，说明本周具体做了什么、结果支持什么判断，以及下一步安排。
-
-写周报时会把 HTML 中的研究内容和批注互动作为素材，并核对实际互动与工作时间，区分本周进展和历史背景。无需另行整理材料包或逐项确认阅读。缺少关键事实时集中补问；AI 给出的解释会作为待核验理解材料，不能直接写成读者已经验证的实验成果。
+默认不传入模型或档位覆盖；用户明确要求时可用启动参数设置，分别覆盖对应项。显式参数用于新后台服务；已有服务运行时需先停止再按参数启动，默认启动器不保存一次性覆盖。服务已暂停时普通恢复不解除暂停，unknown投递不自动重发。mock仅供开发测试，none可保存问题但不代表答疑已验。
 
 ## 运行要求
 
-| 场景 | 要求 |
+| 场景 | 依赖 |
 |---|---|
-| 服务、队列、普通 Markdown 导出 | Python 3.10 或更新版本；核心使用标准库 |
-| PDF 文本、图像提取与核对 | Python 环境中有 PyMuPDF；可用 `python -m pip install -r requirements.txt` 补齐 |
-| 数学表达式校验 | Node.js；优先复用宿主已有运行时，PATH 找不到时可设置 `ARM_NODE_PATH` 为可执行文件位置 |
-| 自动批注答疑 | 当前提供 Codex app-server 适配器，需要本机可运行且已登录的 Codex CLI；认证、模型与推理设置继承宿主 |
-| 前端开发测试 | 另外需要 Playwright 与 Chromium，日常使用无需安装 |
+| 服务、队列、Markdown导出 | Python 3.10+，核心标准库 |
+| PDF读取核验 | PyMuPDF |
+| 数学校验 | Node.js和随包本地KaTeX；可设置ARM_NODE_PATH |
+| 自动批注 | 本机已登录的Codex CLI/app-server |
+| 前端开发验证 | Playwright与Chromium，日常阅读无需额外安装 |
 
-可用宿主的模型调用仍遵循其账号权限、额度和计费方式。skill 不附带模型、登录账号或 API 密钥。
+宿主提供模型、认证、权限与额度，skill不附带账号或密钥。文献、HTML、批注和周报保存于用户PaperVault；.reader/state.sqlite3是问答权威状态，annotations.json是快照。请求会将选区、相关论文证据和必要历史送到用户选择的宿主。
 
-阅读器已有内容时，可在 skill 目录运行以下命令；把占位路径与论文 ID 替换为自己的实际值。通常由宿主代为执行，读者无需手动操作。
+固定服务仅监听回环地址，认证留本机。分发包包含代码、模板、原始内置资源与合成测试数据，不包含私人论文库、凭据或聊天记录。宿主接口见[桥接协议](references/bridge_protocol.md)，旧数据升级见[迁移](references/migration_guide.md)。
 
-```sh
-python scripts/deploy_reader.py --vault <文献库路径> --paper <论文ID>
-python scripts/open_reader.py --vault <文献库路径> <论文ID>
-```
+## 版本与许可
 
-关闭网页后，已提交任务继续在后台处理。需要停下时使用页面的“停止后台服务”，或运行：
+| 版本 | 定位 | 获取 |
+|---|---|---|
+| 3.1.1 | 当前完整阅读器：正文优先、翻译按需、持续批注、必要可视化 | [v3.1.1](https://github.com/noblespear/academic-reading-master/releases/tag/v3.1.1) |
+| 3.0.1 AGPL 重发行 | 保留3.0.1功能，仅调整发布许可与说明 | [v3.0.1-agpl](https://github.com/noblespear/academic-reading-master/releases/tag/v3.0.1-agpl) |
+| 3.0.0 AGPL 重发行 | 首个统一三视图阅读器的历史版本 | [v3.0.0-agpl](https://github.com/noblespear/academic-reading-master/releases/tag/v3.0.0-agpl) |
+| 最早三遍阅读工作流 | 从2026-10-01备份恢复的未编号旧快照，尚未形成完整统一阅读器 | [legacy-three-pass-20261001](https://github.com/noblespear/academic-reading-master/releases/tag/legacy-three-pass-20261001) |
 
-```sh
-python scripts/open_reader.py --vault <文献库路径> --stop
-```
+项目代码 Copyright (c) 2026 Academic Reading Master contributors，采用 **AGPL-3.0-only**，完整条款见[LICENSE](LICENSE)。允许商用；分发受覆盖的修改或衍生版本，以及通过网络向用户提供修改后的服务时，须按许可提供相应源码和许可。原v3.0.0、v3.0.1标签和已授出的MIT许可作为历史记录保留，不作追溯撤回；所有新整理的发行版采用AGPL。
 
-桥接尚未连接时，问题保留并显示等待状态。`--bridge mock` 仅用于开发测试，回答带明确测试标记；`--bridge none` 可在暂不连接答疑宿主时保存问题。
+第三方资源仍保留各自版权与许可，见[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。Anti-Defensive Writing的MIT原件、许可及固定来源随包保留；可视化规范由本项目的独立适配指南与固定组件提供。没有公开再分发授权的Visualize完整上游快照不包含在公开仓库或安装包中。日常创作仍由短指南直接执行语言与可视化原则，完整专题按需加载。
 
-## 数据与宿主适配
-
-文献、生成的阅读 HTML、批注和周报保存在使用者自己的 `PaperVault`。新版批注与任务以 `.reader/state.sqlite3` 为权威存储，`annotations.json` 为可读导出快照。
-
-本地服务只监听回环地址，浏览器与答疑桥接分别使用本机生成的凭据。提交问题后，选区、相关论文依据和必要问答上下文会发送给使用者选择的 AI 宿主处理；资料如何进一步处理取决于该宿主。分发包包含通用代码、模板和合成测试数据，不包含任何人的论文库、阅读记录或认证文件。
-
-自动答疑核心与宿主分离，其他宿主可以遵循[桥接协议](references/bridge_protocol.md)接入。当前内置适配器为 Codex 和测试用 mock；其他宿主需要实现并登记适配器。批注、队列与阅读数据格式无需随模型更换。
-
-已有阅读器迁移遵循[迁移说明](references/migration_guide.md)：保留用户认可的概览、详解及历史问答，仅迁移选定论文。无法唯一恢复的位置显示为需要重新定位。
-
-## 开发与分发
-
-目录中的 `references/` 按功能提供内容与数据规范；`scripts/` 提供命令行工具及测试；`assets/` 提供阅读器和本地数学渲染资源。
-
-核心、搜集、周报与讲解测试使用合成材料，不调用真实模型：
-
-```sh
-python -m unittest discover -s scripts/tests -p test_reader_v3.py -v
-python -m unittest discover -s scripts/tests -p test_collection_reports.py -v
-python -m unittest discover -s scripts/tests -p test_report_explanation.py -v
-```
-
-前端测试可另行安装 `requirements-dev.txt` 和 Playwright Chromium，再运行 `scripts/tests/test_frontend_v3.py`、`scripts/tests/test_annotation_geometry.py`。批注面板滚动与后台更新回归使用 `scripts/tests/test_panel_scroll.py`，覆盖轮询、SSE 新回答及追问输入。真实宿主恢复测试需显式启用，详见桥接协议；其输出属于本地运行资料。
-
-重新打包：
-
-```sh
-python tools/package_skill.py --output dist
-```
-
-命令生成 `.skill`、同内容 `.zip` 和 SHA-256 校验文件，只收录明确允许的源码与静态资源。论文库、运行状态、日志、缓存、截图、测试产物、Git 历史和凭据文件均不进入包。开源时仍应审查实际提交的文件，避免手动加入私人材料。
-
-本项目代码与说明采用 [MIT 许可证](LICENSE)。随包提供的 KaTeX 及字体保留其原许可证和归属，见[第三方资源说明](THIRD_PARTY_NOTICES.md)。论文及其图表属于各自权利人，分发 skill 不包含论文全文。

@@ -1,0 +1,16 @@
+{
+  "name": "anti-defensive-writing",
+  "source": "https://github.com/Kiterlin/anti-defensive-writing",
+  "revision": "6345f09c9141be94df055fd048c94a4f26a8ed66",
+  "source_path": "SKILL.md",
+  "source_url": "https://raw.githubusercontent.com/Kiterlin/anti-defensive-writing/6345f09c9141be94df055fd048c94a4f26a8ed66/SKILL.md",
+  "snapshot_date": "2026-10-12",
+  "verified_date": "2026-10-16",
+  "copy_mode": "byte-for-byte upstream snapshot; verified against pinned commit",
+  "license": "MIT",
+  "license_source": "https://raw.githubusercontent.com/Kiterlin/anti-defensive-writing/6345f09c9141be94df055fd048c94a4f26a8ed66/LICENSE",
+  "files": {
+    "SKILL.md": "ef055917cc1407064cd0deaffd78264c251e8a27c30c112c54c64fb5ca46ef7a",
+    "LICENSE": "cc3d842a912f0ed1fc80ae8d2ca7ab6cff37756422069424bf2edec554219fc9"
+  }
+}

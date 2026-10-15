@@ -1,0 +1,582 @@
+{
+  "version": 1,
+  "description": "Compact method_pipeline topology fixtures derived from the v3.9.6 routing samples. They contain no paper teaching text.",
+  "fixtures": [
+    {
+      "name": "chara",
+      "id": "routing-fixture-chara",
+      "type": "method_pipeline",
+      "config": {
+        "summary": "Routing regression fixture: chara.",
+        "nodes": [
+          {
+            "id": "conditions",
+            "label": "生成条件",
+            "column": 0,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "identity-cache",
+            "label": "身份图缓存",
+            "column": 1,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "relations",
+            "label": "关系估计",
+            "column": 2,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "frame-sampling",
+            "label": "帧序列采样",
+            "column": 3,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "point-tracking",
+            "label": "点追踪注意力",
+            "column": 4,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "adaptive-merge",
+            "label": "自适应合并",
+            "column": 5,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "images",
+            "label": "生成帧图像",
+            "column": 4,
+            "row": 1,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          }
+        ],
+        "edges": [
+          {
+            "id": "prompt-id",
+            "from": "conditions",
+            "to": "identity-cache",
+            "kind": "branch",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "prompt-probe",
+            "from": "conditions",
+            "to": "relations",
+            "kind": "branch",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "id-relations",
+            "from": "identity-cache",
+            "to": "relations",
+            "kind": "dependency",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "relation-ready",
+            "from": "relations",
+            "to": "frame-sampling",
+            "kind": "dependency",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "sampler-attn",
+            "from": "frame-sampling",
+            "to": "point-tracking",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "id-attn",
+            "from": "identity-cache",
+            "to": "point-tracking",
+            "kind": "dependency",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "attn-merge",
+            "from": "point-tracking",
+            "to": "adaptive-merge",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "id-merge",
+            "from": "identity-cache",
+            "to": "adaptive-merge",
+            "kind": "dependency",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "merge-sampling",
+            "from": "adaptive-merge",
+            "to": "frame-sampling",
+            "kind": "feedback",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "sampling-image",
+            "from": "frame-sampling",
+            "to": "images",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          }
+        ],
+        "reading_order": [
+          "conditions",
+          "identity-cache",
+          "relations",
+          "frame-sampling",
+          "point-tracking",
+          "adaptive-merge",
+          "images"
+        ]
+      }
+    },
+    {
+      "name": "feedback",
+      "id": "routing-fixture-feedback",
+      "type": "method_pipeline",
+      "config": {
+        "summary": "Routing regression fixture: feedback.",
+        "nodes": [
+          {
+            "id": "input",
+            "label": "读取图像",
+            "column": 0,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "prepare",
+            "label": "校正亮度",
+            "column": 1,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "contour",
+            "label": "提取轮廓",
+            "column": 0,
+            "row": 1,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "texture",
+            "label": "估计纹理",
+            "column": 1,
+            "row": 1,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "merge",
+            "label": "合并表示",
+            "column": 0,
+            "row": 2,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "check",
+            "label": "检查质量",
+            "column": 1,
+            "row": 2,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          }
+        ],
+        "edges": [
+          {
+            "id": "input-prepare",
+            "from": "input",
+            "to": "prepare",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "prepare-contour",
+            "from": "prepare",
+            "to": "contour",
+            "kind": "branch",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "prepare-texture",
+            "from": "prepare",
+            "to": "texture",
+            "kind": "branch",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "contour-merge",
+            "from": "contour",
+            "to": "merge",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "texture-merge",
+            "from": "texture",
+            "to": "merge",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "merge-check",
+            "from": "merge",
+            "to": "check",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "check-prepare",
+            "from": "check",
+            "to": "prepare",
+            "kind": "feedback",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "input-texture",
+            "from": "input",
+            "to": "texture",
+            "kind": "dependency",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          }
+        ],
+        "reading_order": [
+          "input",
+          "prepare",
+          "contour",
+          "texture",
+          "merge",
+          "check"
+        ]
+      }
+    },
+    {
+      "name": "parallel",
+      "id": "routing-fixture-parallel",
+      "type": "method_pipeline",
+      "config": {
+        "summary": "Routing regression fixture: parallel.",
+        "nodes": [
+          {
+            "id": "input",
+            "label": "读取图像",
+            "column": 0,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "prepare",
+            "label": "校正亮度",
+            "column": 1,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "contour",
+            "label": "提取轮廓",
+            "column": 2,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "texture",
+            "label": "估计纹理",
+            "column": 2,
+            "row": 1,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "merge",
+            "label": "合并表示",
+            "column": 3,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "check",
+            "label": "检查质量",
+            "column": 4,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          }
+        ],
+        "edges": [
+          {
+            "id": "input-prepare",
+            "from": "input",
+            "to": "prepare",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "prepare-contour",
+            "from": "prepare",
+            "to": "contour",
+            "kind": "branch",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "prepare-texture",
+            "from": "prepare",
+            "to": "texture",
+            "kind": "branch",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "contour-merge",
+            "from": "contour",
+            "to": "merge",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "texture-merge",
+            "from": "texture",
+            "to": "merge",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "merge-check",
+            "from": "merge",
+            "to": "check",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "input-texture",
+            "from": "input",
+            "to": "texture",
+            "kind": "dependency",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          }
+        ],
+        "reading_order": [
+          "input",
+          "prepare",
+          "contour",
+          "texture",
+          "merge",
+          "check"
+        ]
+      }
+    },
+    {
+      "name": "sequential",
+      "id": "routing-fixture-sequential",
+      "type": "method_pipeline",
+      "config": {
+        "summary": "Routing regression fixture: sequential.",
+        "nodes": [
+          {
+            "id": "s0",
+            "label": "读取输入",
+            "column": 0,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "s1",
+            "label": "准备数据",
+            "column": 1,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "s2",
+            "label": "建立表示",
+            "column": 2,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "s3",
+            "label": "执行处理",
+            "column": 3,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "s4",
+            "label": "检查结果",
+            "column": 4,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          },
+          {
+            "id": "s5",
+            "label": "输出结果",
+            "column": 5,
+            "row": 0,
+            "summary": "Node responsibility for routing regression.",
+            "inputs": "Upstream result.",
+            "outputs": "Downstream result."
+          }
+        ],
+        "edges": [
+          {
+            "id": "chain-0",
+            "from": "s0",
+            "to": "s1",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "chain-1",
+            "from": "s1",
+            "to": "s2",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "chain-2",
+            "from": "s2",
+            "to": "s3",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "chain-3",
+            "from": "s3",
+            "to": "s4",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          },
+          {
+            "id": "chain-4",
+            "from": "s4",
+            "to": "s5",
+            "kind": "flow",
+            "label": "Relation",
+            "flow": "Relation payload.",
+            "cause": "Declared dependency."
+          }
+        ],
+        "reading_order": [
+          "s0",
+          "s1",
+          "s2",
+          "s3",
+          "s4",
+          "s5"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+/* Isolated teaching fixture appended to the original legacy fixture. */
+PAPER_DATA.content_contract_version='3.1';
+const fallback=text=>({version:1,blocks:[{id:'fallback',type:'paragraph',text_zh:text}]});
+const ratioConfig={model:'ratio',numerator:'H',denominator:'N',latex:'h=\\frac{H}{N}',parameters:[{id:'H',label:'命中次数',min:0,max:7,step:1,value:2},{id:'N',label:'读取次数',min:0,max:10,step:1,value:7}],result_label:'命中比例'};
+PAPER_DATA.learning_catalog={concepts:[
+  {id:'capacity',label:'容量',context_meaning:'缓存最多能同时保存几项内容。',plain_definition:'桌面最多放三本书，容量就是三。',prerequisite_ids:[],example:'第四本书来到时，需要先拿走一本。'},
+  {id:'hit',label:'命中',context_meaning:'要读的内容已经在缓存里。',plain_definition:'想看的书就在桌上，这一次不需要去书架。',prerequisite_ids:['capacity']}
+],aids:[
+  {id:'concepts',type:'concept_cards',title:'词语与背景',version:1,evidence_kind:'teaching_example',config:{concept_ids:['capacity','hit']},fallback:fallback('容量是可同时保存的项数。命中是所需内容已在缓存中。')},
+  {id:'walk',type:'steps',title:'看一次读取',version:1,evidence_kind:'teaching_example',config:{steps:[{title:'先查桌面',text:'检查所需的书是否在桌上。'},{title:'从书架取书',text:'桌面没有时去书架；桌面满时先移出最久没看的书。'},{title:'把书放到手边',text:'这本书变成最近使用的书。'}]},fallback:fallback('先检查缓存，再取内容，最后更新最近使用位置。')},
+  {id:'ratio',type:'formula_explorer',title:'代入公式',version:1,evidence_kind:'teaching_example',config:ratioConfig,fallback:fallback('两次命中除以七次读取，比例约为 0.2857。')},
+  {id:'parameter',type:'parameter_explorer',title:'容量 × 读取成本',version:1,evidence_kind:'teaching_example',config:{parameters:[{id:'size',label:'项数',min:1,max:10,step:1,value:3},{id:'cost',label:'每项成本',min:1,max:4,step:1,value:2}],expression:{op:'multiply',args:[{parameter:'size'},{parameter:'cost'}]},result_label:'总成本',unit:'单位'},fallback:fallback('三项各需两个成本单位，总成本为六。')},
+  {id:'predict',type:'prediction',title:'先预测',version:1,evidence_kind:'teaching_example',config:{question:'总读取次数不变，命中次数增加，命中比例怎样变？',choices:[{id:'up',text:'上升',feedback:'分母固定，分子变大，所以比例上升。'},{id:'down',text:'下降',feedback:'命中次数是分子；分子变大不会让这个比例下降。'}],correct_choice_id:'up'},fallback:fallback('比例上升，因为总读取次数保持不变。')},
+  {id:'cache',type:'lru_cache',title:'缓存每一步',version:1,evidence_kind:'teaching_example',config:{capacity:3,min_capacity:1,max_capacity:5,sequence:['A','B','C','A','D','A','B']},fallback:fallback('七次读取命中两次，需要从外部读取五次。')}
+]};
+PAPER_DATA.overview.sections[0].blocks[0].learning={id:'learn-cache',plain_summary:'缓存把近期用过的内容放在手边，减少重复读取。',concept_ids:['capacity','hit'],analogy:{text:'书桌保存常看的书，书架保存其余的书。',mappings:[{everyday:'桌面位置',paper:'缓存容量'},{everyday:'书就在桌上',paper:'缓存命中'}],boundary:'书桌只是教学类比，不能用它推断真实程序的运行速度。'},example:{evidence_kind:'teaching_example',input:'桌面只有三个位置，依次看 A、B、C、A、D、A、B。',steps:[{text:'第四次看 A 时，它在桌上。'},{text:'第六次再看 A 时，它仍在桌上。'}],result:'七次中有两次不用去书架。',interpretation:'命中次数为二，总读取次数为七。'},aid_ids:['walk','cache','predict']};
+PAPER_DATA.explanation.sections[0].blocks[2].latex='h=\\frac{H}{N}';
+PAPER_DATA.explanation.sections[0].blocks[2].learning={id:'learn-ratio',plain_summary:'这条公式统计本次读取中，直接找到内容的次数占多少。',concept_ids:['hit'],formula_explanations:[{id:'ratio-explanation',formula_ref:'ex-formula',purpose:'把命中次数换算成全部读取中的比例。',symbols:[{symbol:'h',meaning:'命中比例',unit:'无单位',range:'从 0 到 1'},{symbol:'H',meaning:'命中次数',unit:'次'},{symbol:'N',meaning:'全部读取次数',unit:'次',range:'必须大于零'}],operations:[{operator:'除法',meaning:'用命中次数除以全部读取次数。'}],steps:[{text:'先数出命中次数 H=2。'},{text:'再数出全部读取次数 N=7。'},{text:'把两个数代入公式。',latex:'h=\\frac{2}{7}\\approx0.2857'}],example:{evidence_kind:'teaching_example',input:'本次共读七次，其中两次命中。',steps:[{text:'二除以七。',latex:'2\\div7\\approx0.2857'}],result:'约为 28.57%。',interpretation:'每七次读取中，两次直接从缓存取得内容。'},variation:'固定总次数时，命中次数增加会让比例上升。',boundary:'总次数为零时没有定义。这是当前序列的统计值，不能保证下次比例相同。',paper_connection:'命中比例帮助判断这次序列中的缓存使用情况。'}],aid_ids:['ratio','parameter']};

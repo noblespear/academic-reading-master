@@ -1,0 +1,534 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "paper-data-3.2.schema.json",
+  "title": "Reader content contract 3.2 (schema_version 3; body-first human review)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "content_contract_version",
+    "content_version",
+    "content_status",
+    "id",
+    "content_review",
+    "overview",
+    "explanation",
+    "sections"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 3
+    },
+    "content_contract_version": {
+      "const": "3.2"
+    },
+    "content_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "content_status": {
+      "enum": [
+        "incomplete",
+        "ready"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+    },
+    "title_en": {
+      "type": "string"
+    },
+    "title_cn": {
+      "type": "string"
+    },
+    "content_review": {
+      "type": "object",
+      "required": [
+        "reviewer",
+        "factual_gates"
+      ],
+      "properties": {
+        "reviewer": {
+          "type": "string"
+        },
+        "plain_language_scores": {
+          "description": "Optional historical review scores; retained for compatibility, with no required total or deployment threshold. When present, record ten integer scores of 0, 1 or 2.",
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          }
+        },
+        "factual_gates": {
+          "type": "object",
+          "required": [
+            "source_accuracy",
+            "evidence_separation",
+            "claim_scope",
+            "prerequisites",
+            "formula_correctness",
+            "analogy_and_example"
+          ],
+          "properties": {
+            "source_accuracy": {
+              "type": "boolean"
+            },
+            "evidence_separation": {
+              "type": "boolean"
+            },
+            "claim_scope": {
+              "type": "boolean"
+            },
+            "prerequisites": {
+              "type": "boolean"
+            },
+            "formula_correctness": {
+              "type": "boolean"
+            },
+            "analogy_and_example": {
+              "type": "boolean"
+            }
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "learning_requirements": {
+      "type": "object",
+      "properties": {
+        "overview_framework": {
+          "description": "Optional additive registration of a default-visible top-level overview method framework. New scaffolds declare kind interactive_pipeline, requiring a placement body method_pipeline aid; static figures cannot satisfy it. Registrations without kind retain legacy figure/diagram and graph_walkthrough compatibility. Complete method coverage and agreement with prose require human review.",
+          "type": "object",
+          "required": [
+            "section_id",
+            "block_id"
+          ],
+          "properties": {
+            "section_id": {
+              "$ref": "content-types.schema.json#/$defs/id"
+            },
+            "block_id": {
+              "$ref": "content-types.schema.json#/$defs/id"
+            },
+            "kind": {
+              "const": "interactive_pipeline",
+              "description": "When present, require the generic clickable directed method map. Omit only for pre-existing registrations."
+            }
+          }
+        },
+        "required_concept_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+          }
+        },
+        "required_formula_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+          }
+        }
+      }
+    },
+    "learning_catalog": {
+      "type": "object",
+      "properties": {
+        "concepts": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "$ref": "content-types.schema.json#/$defs/concept"
+          }
+        },
+        "aids": {
+          "type": "array",
+          "items": {
+            "$ref": "content-types.schema.json#/$defs/aid"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/noLearningLayer"
+        }
+      ]
+    },
+    "overview": {
+      "type": "object",
+      "required": [
+        "sections"
+      ],
+      "properties": {
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "blocks"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+              },
+              "title_cn": {
+                "type": "string"
+              },
+              "title_en": {
+                "type": "string"
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "blocks": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/bodyBlock"
+                    },
+                    {
+                      "required": [
+                        "evidence_kind"
+                      ],
+                      "properties": {
+                        "learning": false,
+                        "key_formula": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "source_refs": {
+                "$ref": "content-types.schema.json#/$defs/block/properties/source_refs",
+                "description": "Chapter source range; ordinary body paragraphs may inherit this scope without repeating source_refs."
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/noLearningLayer"
+        }
+      ]
+    },
+    "explanation": {
+      "type": "object",
+      "required": [
+        "sections"
+      ],
+      "properties": {
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "blocks"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+              },
+              "title_cn": {
+                "type": "string"
+              },
+              "title_en": {
+                "type": "string"
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "blocks": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/bodyBlock"
+                    },
+                    {
+                      "required": [
+                        "evidence_kind"
+                      ],
+                      "properties": {
+                        "learning": false,
+                        "key_formula": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "source_refs": {
+                "$ref": "content-types.schema.json#/$defs/block/properties/source_refs",
+                "description": "Chapter source range; ordinary body paragraphs may inherit this scope without repeating source_refs."
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/noLearningLayer"
+        }
+      ]
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "blocks"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$"
+          },
+          "title_cn": {
+            "type": "string"
+          },
+          "title_en": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "blocks": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "allOf": [
+                {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/bodyBlock"
+                    },
+                    {
+                      "required": [
+                        "evidence_kind"
+                      ],
+                      "properties": {
+                        "learning": false,
+                        "key_formula": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "not": {
+                    "required": [
+                      "learning"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "enum": [
+                          "para",
+                          "paragraph"
+                        ]
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "text_en",
+                      "text_zh"
+                    ],
+                    "properties": {
+                      "text_en": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "text_zh": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "not": {
+                    "required": [
+                      "placement"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "source_refs": {
+            "$ref": "content-types.schema.json#/$defs/block/properties/source_refs",
+            "description": "Chapter source range; ordinary body paragraphs may inherit this scope without repeating source_refs."
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/$defs/noLearningLayer"
+        }
+      ]
+    },
+    "default_annotations": {
+      "$ref": "content-types.schema.json#/$defs/defaultAnnotation"
+    },
+    "translation": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "deferred",
+            "ready"
+          ]
+        }
+      },
+      "description": "Explicit deferred translation permits completed body delivery with sections:[]; ready denotes completed bilingual translation. Omitted markers retain the original completion rule."
+    }
+  },
+  "description": "Contract 3.2 has one reading line: block.learning is forbidden. Each actual body block, including details/quote children, requires its own evidence_kind; no implicit provenance inheritance. Body IDs and source block/content references share paper scope in deployment validation. Aid fallback documents retain their own local rich-document ID scope. Humans review formula explanations in the body. Publication requires ready plus a named reviewer with all six factual gates; isolated preview skips only completed publication review. Translation status is an optional additive marker: deferred requires empty translation sections and ready requires non-empty bilingual sections. Chapter source_refs support ordinary prose without repeated block references.",
+  "$defs": {
+    "bodyBlock": {
+      "allOf": [
+        {
+          "$ref": "content-types.schema.json#/$defs/block"
+        }
+      ],
+      "required": [
+        "evidence_kind"
+      ],
+      "properties": {
+        "learning": false,
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bodyBlock"
+          }
+        }
+      }
+    },
+    "noLearningLayer": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "learning": false
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/noLearningLayer"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/noLearningLayer"
+          }
+        },
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "content_status",
+          "learning_requirements"
+        ],
+        "properties": {
+          "content_status": {
+            "const": "ready"
+          },
+          "learning_requirements": {
+            "type": "object",
+            "required": [
+              "overview_framework"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "overview": {
+            "properties": {
+              "sections": {
+                "minItems": 5,
+                "maxItems": 5,
+                "description": "Completed full paper readers preserve the five independent overview sections; the runtime validator also checks the registered method section is second."
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "translation"
+        ],
+        "properties": {
+          "translation": {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "deferred"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sections": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "sections": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

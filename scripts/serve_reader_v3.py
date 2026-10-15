@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Loopback reader HTTP supervisor (stdlib only).
+"""Loopback reader HTTP supervisor.
 
 Browser -> per-annotation API -> SQLite -> bridge long poll -> host session.
 The service owns its bridge child; the bridge owns an independent app-server.
 """
 import argparse
+import importlib
 import json
 import mimetypes
 import os
@@ -13,14 +14,44 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 from reader_store import ReaderStore, StoreError
+from runtime_lock import RuntimeLock
 
 MAX_BODY = 2 * 1024 * 1024
+
+
+def require_pdf_runtime():
+    """Fail before publishing a service that cannot verify PDF evidence.
+
+    Use this interpreter's imports only: another environment's native PDF
+    extensions cannot safely be borrowed by adding its site-packages to sys.path.
+    """
+    try:
+        try:
+            pdf_module = importlib.import_module("pymupdf")
+        except ImportError:
+            pdf_module = importlib.import_module("fitz")
+        # Also catch an unrelated package named fitz or broken native extension.
+        with pdf_module.open() as document:
+            document.new_page().get_text()
+    except Exception as exc:
+        if os.name == "nt":
+            command = "& '" + sys.executable.replace("'", "''") + "' -m pip install PyMuPDF"
+        else:
+            import shlex
+            command = shlex.join([sys.executable, "-m", "pip", "install", "PyMuPDF"])
+        raise RuntimeError(
+            "阅读器启动前检查失败：当前 Python 无法使用 PyMuPDF 验证 source.pdf。\n"
+            "实际解释器: " + sys.executable + "\n"
+            "请在同一解释器安装依赖后重试，或使用已配置 PyMuPDF 的 Python 运行启动脚本。\n"
+            "安装命令: " + command + "\n原因: " + str(exc)
+        ) from exc
 
 
 def hidden_flags(detach=False):
@@ -57,18 +88,32 @@ class ReaderServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, vault, paper, port=0, bridge="codex", config=None):
-        self.store = ReaderStore(vault)
-        self.store.paper_dir(paper)
+    def __init__(self, vault, paper, port=0, bridge="codex", config=None, translation_runner_factory=None):
+        self.runtime_lock = RuntimeLock(Path(vault).resolve() / ".reader" / "service.lock", timeout=0).acquire()
+        try:
+            self.store = ReaderStore(vault)
+            self.store.paper_dir(paper)
+        except Exception:
+            if hasattr(self, "store"):
+                self.store.close()
+            self.runtime_lock.close()
+            raise
         self.paper = paper
         self.stopping = threading.Event()
         self.token = secrets.token_urlsafe(32)
         self.bridge_token = secrets.token_urlsafe(48)
         self.bridge_kind = bridge
+        self.connection_lock = threading.RLock()
+        self.service_instance_id = "service_" + uuid.uuid4().hex
         self.bridge_config = config or {}
         self.bridge_process = None
         self.bridge_log = None
-        super().__init__(("127.0.0.1", port), ReaderHandler)
+        try:
+            super().__init__(("127.0.0.1", port), ReaderHandler)
+        except Exception:
+            self.store.close()
+            self.runtime_lock.close()
+            raise
         self.base_url = "http://127.0.0.1:" + str(self.server_address[1])
         self.state_file = self.store.state_dir / "server.json"
         self.bridge_config_file = self.store.state_dir / "bridge-config.json"
@@ -82,26 +127,73 @@ class ReaderServer(ThreadingHTTPServer):
                 except (ValueError, StoreError, OSError) as exc:
                     print("Import skipped:", directory.name, str(exc), file=sys.stderr)
         atomic_json(self.state_file, {"pid": os.getpid(), "url": self.base_url, "paper_id": paper,
-                    "api_version": 3, "started_at": time.time(), "token": self.token})
+                    "api_version": 3, "started_at": time.time(), "token": self.token, "service_instance_id": self.service_instance_id})
         atomic_json(self.bridge_config_file, {"url": self.base_url, "token": self.bridge_token,
                     "vault": str(self.store.vault), "adapter": bridge, **self.bridge_config})
+        with self.store.transaction():
+            # A previous service's heartbeat cannot verify this service's host.
+            self.store.db.execute("UPDATE bridges SET seen_at=0")
+            if bridge != "none":
+                self.store.db.execute("UPDATE assistant_settings SET adapter=? WHERE id=1", (bridge,))
+        from translation_jobs import TranslationJobs
+        try:
+            self.translations = TranslationJobs(self.store, self.bridge_config, translation_runner_factory)
+        except Exception:
+            self.server_close()
+            self.store.close()
+            self.runtime_lock.close()
+            raise
+
+    def assistant_status(self, paper=None):
+        with self.connection_lock:
+            connecting = self.bridge_kind != "none" and self.bridge_process is not None and self.bridge_process.poll() is None
+            return self.store.status(paper, self.service_instance_id, connecting)["assistant"]
+
+    def _start_bridge_locked(self):
+        if self.stopping.is_set() or self.store.settings()["paused"] or self.bridge_kind == "none":
+            return False
+        if self.bridge_process is not None and self.bridge_process.poll() is None:
+            return False
+        script = Path(__file__).resolve().parent / "bridge_client.py"
+        atomic_json(self.bridge_config_file, {"url": self.base_url, "token": self.bridge_token,
+                    "vault": str(self.store.vault), "adapter": self.bridge_kind,
+                    "service_instance_id": self.service_instance_id, **self.bridge_config})
+        if self.bridge_log is None:
+            self.bridge_log = (self.store.state_dir / "bridge.log").open("ab", buffering=0)
+        self.bridge_process = subprocess.Popen([sys.executable, str(script), "--config", str(self.bridge_config_file)],
+            stdin=subprocess.DEVNULL, stdout=self.bridge_log, stderr=self.bridge_log,
+            creationflags=hidden_flags(), start_new_session=(os.name != "nt"))
+        return True
+
+    def assistant_action(self, action, data):
+        if self.stopping.is_set():
+            raise StoreError(409, "service is stopping")
+        paper = data.get("paper_id", self.paper)
+        if "enable" in data and type(data["enable"]) is not bool:
+            raise StoreError(400, "enable must be boolean")
+        with self.connection_lock:
+            adapter = self.bridge_kind if self.bridge_kind != "none" else self.store.settings()["adapter"]
+            intent = self.store.assistant_intent(action, paper if action != "pause" else None,
+                                                 data.get("request_id"), adapter, data.get("enable", False))
+            if action != "pause" and not self.store.settings()["paused"]:
+                self.bridge_kind = adapter
+                # Idempotence includes process state: a repeated successful request
+                # repairs a disconnected process but never creates a second child.
+                self._start_bridge_locked()
+            return {"assistant": self.assistant_status(paper), **intent}
 
     def start_supervisor(self):
         def supervise():
             backoff = 1
             while not self.stopping.is_set():
                 self.store.expire_leases()
-                if self.bridge_kind != "none" and (self.bridge_process is None or self.bridge_process.poll() is not None):
+                if self.bridge_kind != "none" and not self.store.settings()["paused"] and (self.bridge_process is None or self.bridge_process.poll() is not None):
                     if self.bridge_process is not None:
                         if self.stopping.wait(backoff):
                             break
                         backoff = min(30, backoff * 2)
-                    script = Path(__file__).resolve().parent / "bridge_client.py"
-                    if self.bridge_log is None:
-                        self.bridge_log = (self.store.state_dir / "bridge.log").open("ab", buffering=0)
-                    self.bridge_process = subprocess.Popen([sys.executable, str(script), "--config", str(self.bridge_config_file)],
-                        stdin=subprocess.DEVNULL, stdout=self.bridge_log, stderr=self.bridge_log,
-                        creationflags=hidden_flags(), start_new_session=(os.name != "nt"))
+                    with self.connection_lock:
+                        self._start_bridge_locked()
                 self.stopping.wait(2)
         self.supervisor = threading.Thread(target=supervise, name="reader-supervisor", daemon=True)
         self.supervisor.start()
@@ -110,6 +202,7 @@ class ReaderServer(ThreadingHTTPServer):
         if self.stopping.is_set():
             return
         self.stopping.set()
+        self.translations.stop()
         with self.store.transaction():
             self.store._event(None, "status", {"stopping": True})
         def shutdown():
@@ -128,6 +221,7 @@ class ReaderServer(ThreadingHTTPServer):
 
     def cleanup(self):
         self.stopping.set()
+        self.translations.stop()
         if hasattr(self, "supervisor"):
             self.supervisor.join(timeout=3)
         self.server_close()
@@ -141,6 +235,7 @@ class ReaderServer(ThreadingHTTPServer):
         except (OSError, ValueError):
             pass
         self.store.close()
+        self.runtime_lock.close()
 
 
 class ReaderHandler(BaseHTTPRequestHandler):
@@ -156,6 +251,11 @@ class ReaderHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
+        if code >= 400:
+            # Guards reject before consuming a POST body. Close the connection
+            # so those bytes cannot be parsed as a second HTTP request.
+            self.close_connection = True
+            self.send_header("Connection", "close")
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(raw)
@@ -175,7 +275,7 @@ class ReaderHandler(BaseHTTPRequestHandler):
             if path == "/api/events":
                 token = token or query.get("token", [""])[0]
             if not secrets.compare_digest(token, expected):
-                raise StoreError(403, "missing or invalid local token")
+                raise StoreError(401, "missing or invalid local token")
 
     def _body(self):
         if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
@@ -202,6 +302,16 @@ class ReaderHandler(BaseHTTPRequestHandler):
             if self.command in ("GET", "HEAD"):
                 return self._get(path, query)
             data = self._body()
+            if path.startswith("/api/assistant/") and self.command == "POST":
+                return self._json(200, self.server.assistant_action(path.rsplit("/", 1)[-1], data))
+            if path == "/api/assets" and self.command == "POST":
+                from annotation_assets import save_upload
+                directory = self.server.store.paper_dir(data.get("paper_id"))
+                try:
+                    attachment = save_upload(directory, data)
+                except ValueError as exc:
+                    raise StoreError(400, str(exc)) from exc
+                return self._json(201, {"attachment": attachment})
             if path == "/api/stop" and self.command == "POST":
                 self._json(200, {"ok": True, "stopping": True})
                 self.server.request_stop()
@@ -209,6 +319,14 @@ class ReaderHandler(BaseHTTPRequestHandler):
             if path.startswith("/api/bridge/"):
                 return self._bridge(path, data)
             bits = path.strip("/").split("/")
+            if len(bits) == 4 and bits[:2] == ["api", "papers"] and bits[3] == "translation" and self.command == "POST":
+                result = self.server.translations.generate(bits[2], data)
+                return self._json(202 if result["status"] in ("queued", "running") else 200, result)
+            if len(bits) in (4, 5) and bits[:2] == ["api", "papers"] and bits[3] == "drafts":
+                if len(bits) == 4 and self.command == "POST":
+                    return self._json(200, self.server.store.save_draft(bits[2], data))
+                if len(bits) == 5 and self.command == "DELETE":
+                    return self._json(200, self.server.store.delete_draft(bits[2], bits[4], data.get("revision")))
             if len(bits) < 4 or bits[:2] != ["api", "papers"] or bits[3] != "annotations":
                 raise StoreError(404, "route not found")
             paper, store = bits[2], self.server.store
@@ -222,7 +340,7 @@ class ReaderHandler(BaseHTTPRequestHandler):
                     return self._json(200, store.delete(paper, bits[4], data.get("revision")))
             if len(bits) == 6 and self.command == "POST":
                 aid, action = bits[4], bits[5]
-                if action in ("followups", "retry", "submit"):
+                if action in ("followups", "retry", "submit", "cancel"):
                     return self._json(200, store.edit(paper, aid, {**data, "submit": True}, "followup" if action == "followups" else action))
                 if action == "read":
                     return self._json(200, store.mark_read(paper, aid, data))
@@ -241,13 +359,19 @@ class ReaderHandler(BaseHTTPRequestHandler):
         if path in ("/api/session", "/api/ping"):
             paper = query.get("paper_id", [self.server.paper])[0]
             self.server.store.paper_dir(paper)
-            return self._json(200, {"ok": True, "paper_id": paper, "api_version": 3, "token": self.server.token} if path.endswith("session")
-                              else {"ok": True, "paper_id": paper, "api_version": 3})
+            return self._json(200, {"ok": True, "paper_id": paper, "api_version": 3, "token": self.server.token,
+                                   "service_instance_id": self.server.service_instance_id} if path.endswith("session")
+                              else {"ok": True, "paper_id": paper, "api_version": 3, "service_instance_id": self.server.service_instance_id})
         if path == "/api/status":
-            return self._json(200, {**self.server.store.status(), "stopping": self.server.stopping.is_set()})
+            paper = query.get("paper_id", [None])[0]
+            return self._json(200, {**self.server.store.status(paper), "assistant": self.server.assistant_status(paper), "stopping": self.server.stopping.is_set()})
         if path == "/api/events":
             return self._sse(query)
         bits = path.strip("/").split("/")
+        if len(bits) == 4 and bits[:2] == ["api", "papers"] and bits[3] == "translation":
+            return self._json(200, self.server.translations.status(bits[2]))
+        if len(bits) == 4 and bits[:2] == ["api", "papers"] and bits[3] == "drafts":
+            return self._json(200, self.server.store.list_drafts(bits[2]))
         if len(bits) == 4 and bits[:2] == ["api", "papers"] and bits[3] == "annotations":
             return self._json(200, self.server.store.list_annotations(bits[2]))
         if path.startswith("/api/"):
@@ -275,7 +399,8 @@ class ReaderHandler(BaseHTTPRequestHandler):
                     store.changed.wait(min(2, max(0, deadline - time.monotonic())))
             return self._json(200, {"stop": True, "task": None})
         if action == "heartbeat":
-            return self._json(200, {**store.heartbeat(bid, data.get("tasks", [])), "stop": self.server.stopping.is_set()})
+            settings = store.settings()
+            return self._json(200, {**store.heartbeat(bid, data.get("tasks", []), data.get("info")), "stop": self.server.stopping.is_set(), "paused": bool(settings["paused"]), "connection_revision": settings["connection_revision"]})
         if action == "recover":
             return self._json(200, store.recoverable(bid))
         if action == "adopt":
@@ -284,6 +409,8 @@ class ReaderHandler(BaseHTTPRequestHandler):
             return self._json(200, store.acknowledge(data["task_id"], bid, data["claim_token"], data.get("thread_id"), data.get("turn_id")))
         if action == "result":
             return self._json(200, store.result(data["task_id"], bid, data["claim_token"], data.get("result"), data.get("error")))
+        if action == "unknown":
+            return self._json(200, store.mark_unknown(data["task_id"], bid, data["claim_token"], data.get("error", "delivery outcome unknown")))
         raise StoreError(404, "bridge route not found")
 
     def _sse(self, query):
@@ -355,10 +482,14 @@ def main():
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--no-open", action="store_true")
     parser.add_argument("--bridge", choices=("codex", "mock", "none"), default="codex")
-    parser.add_argument("--model", help="Optional host model override; default inherits host")
-    parser.add_argument("--effort", help="Optional host reasoning override; default inherits host")
+    parser.add_argument("--model", help="Optional host model override; omitted values inherit host/session settings")
+    parser.add_argument("--effort", help="Optional reasoning override; omitted values inherit host/session settings")
     parser.add_argument("--codex-bin", help="Optional installed codex executable")
     args = parser.parse_args()
+    try:
+        require_pdf_runtime()
+    except RuntimeError as exc:
+        parser.exit(2, str(exc) + "\n")
     config = {key: getattr(args, key) for key in ("model", "effort", "codex_bin") if getattr(args, key)}
     server = ReaderServer(args.vault, args.paper, args.port, args.bridge, config)
     server.start_supervisor()

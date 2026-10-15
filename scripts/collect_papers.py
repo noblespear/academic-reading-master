@@ -164,7 +164,7 @@ def collect(vault, manifest, download=True):
     for paper in manifest['papers']:
         if not isinstance(paper, dict) or not str(paper.get('title', '')).strip():
             raise ValueError('Each paper needs a nonempty title.')
-        if paper.get('id') and not re.fullmatch(r'[A-Za-z0-9_-]+', paper['id']):
+        if paper.get('id') and (not isinstance(paper['id'], str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,159}', paper['id'])):
             raise ValueError('Unsafe paper ID.')
     log = {'query': manifest.get('query', ''), 'constraints': manifest.get('constraints', {}),
            'searched_at': manifest.get('searched_at', now()), 'sources': manifest.get('sources', []), 'papers': []}

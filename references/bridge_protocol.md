@@ -16,7 +16,7 @@
 
 服务和 bridge 不由聊天中的 tool session、协作 agent 或浏览器页面维持。关闭阅读页或聊天后，它们继续运行。服务监督 bridge，异常退出后以有限退避重启；模型宿主由 bridge 持有 stdio。Windows 使用隐藏进程标志，launcher 使用 `DETACHED_PROCESS` 和独立进程组。其他系统使用独立 session。
 
-每个 vault 的权威数据位于 `<vault>/.reader/state.sqlite3`，启用 WAL、`synchronous=FULL` 与 SQLite 事务。`papers/<paper_id>/annotations.json` 是原子生成的导出快照，不能作为并发写入接口。模型只提交 `answer + sources`，由服务事务性更新 SQLite 后投影 JSON。浏览器按单条批注写 API，不发送整个批注数组覆盖文件。
+每个 vault 的权威数据位于 `<vault>/.reader/state.sqlite3`，启用 WAL、`synchronous=FULL` 与 SQLite 事务。`papers/<paper_id>/annotations.json` 是原子生成的导出快照，不能作为并发写入接口。模型提交答案、来源及可选富文档、受管理附件、学习状态，由服务事务性更新 SQLite 后投影 JSON。浏览器按单条批注写 API，不发送整个批注数组覆盖文件。
 
 本机运行信息：
 
@@ -38,11 +38,11 @@
 ### 获取会话与状态
 
 ```http
-GET /api/session?paper_id=example-paper
+GET /api/session?paper_id=1996_progressive_meshes
 ```
 
 ```json
-{"ok":true,"paper_id":"example-paper","api_version":3,"token":"<local browser token>"}
+{"ok":true,"paper_id":"1996_progressive_meshes","api_version":3,"token":"<local browser token>"}
 ```
 
 多论文共用一个服务时建议传 `paper_id`；省略时返回服务启动时的默认论文。`/api/ping` 返回相同版本和 paper ID，不返回 token。
@@ -63,6 +63,32 @@ GET /api/session?paper_id=example-paper
 
 `counts` 的键是内部 task 状态，不是批注显示状态。bridge 最近 60 秒有注册、认领、ack 或 heartbeat 才被视为在线。
 
+### 3.1 答疑健康与显式连接
+
+`GET /api/status?paper_id=<id>` 保留旧字段，增加 assistant：
+
+```json
+{"enabled":true,"state":"waiting","message":"等待答疑连接","allowed_actions":["ensure","pause","rebuild"],"pending_count":1,"service_instance_id":"service_..."}
+```
+
+state 为 ready、connected、waiting、connecting、paused、error、unknown。健康依据宿主可核实接口和实际连接，不因为 heartbeat 或 initialize 成功就宣称模型可用。状态可附 health、blocked_tasks、pause_scope:"vault"；allowed_actions 根据当前状态返回，浏览器依该字段提供动作。
+
+| 认证POST | body | 语义 |
+|---|---|---|
+| /api/assistant/ensure | {paper_id,enable?:boolean,request_id} | 幂等连接/恢复已登记适配器，普通连接不解除用户暂停 |
+| /api/assistant/pause | {request_id} | 持久暂停整个库的后续认领与重连，当前turn可完成 |
+| /api/assistant/rebuild | {paper_id,request_id} | 用户明确重建该论文会话，保留问答/队列；unknown仍需明确处理 |
+
+返回包含 {assistant}。点击“开启答疑”以 ensure 的 enable:true 明确撤销暂停。暂停意图存在SQLite，不随临时 bridge-config 删除。启动器和网页共用这些状态；存活服务 bridge=none 时可连接。进程完全停止时须双击“打开阅读器.bat”，普通网页不能启动本机进程。
+
+### 受管理图片
+
+`POST /api/assets` body 为 {paper_id,name,media_type,data_base64,alt?,caption?}，返回 {attachment:{id,src,media_type,alt,caption,sha256}}。浏览器token、Host、Origin保护与其他写接口相同。只支持PNG、JPEG、WebP，解码后最多1MiB、最多16,000,000像素，单边最多32,768像素，内容寻址保存到 assets/annotations/。
+
+标准库验证PNG签名、CRC、容器及解压后行长度/过滤类型，JPEG/WebP验证签名、帧信息与容器边界；有Pillow时另做完整解码verify/load。没有Pillow时仍可运行，结构验证不等同于所有编码格式的完整像素解码。图片类型来自字节核验，不相信后缀或声明。附件引用另核对所属论文、文件和哈希。
+
+读取失败、会话token变更或401时刷新 /api/session 并重建SSE；旧请求不可无条件覆盖较新内容，未提交草稿保留。
+
 ### 单条批注路由
 
 | 方法与路径 | JSON body | 行为 |
@@ -79,6 +105,8 @@ GET /api/session?paper_id=example-paper
 
 创建、修改、追问、重试、提交与标为已读返回 `{annotation, task}`，无新任务时 `task:null`；创建使用 HTTP 201，其他成功使用 200。删除返回 `{ok:true, annotation:<tombstone>}`。内容 CAS 冲突返回 HTTP 409：
 
+创建、PATCH与followups可增加 note_content:{version:1,blocks:[...]}、attachments、study_state。旧user_note仍兼容；note_content存在时由其确定性生成user_note。结果可带answer_content和相同扩展；answer_content决定兼容answer。当前轮、队列payload、history与快照完整保留扩展字段；结果附件与问题附件合并，不丢输入图片。富块和本地资源按 content_contract.py 校验，不能通过额外字段注入脚本。
+
 ```json
 {"ok":false,"error":"revision conflict; reload before editing","current":{"id":"anno_...","revision":4}}
 ```
@@ -92,13 +120,13 @@ GET /api/session?paper_id=example-paper
 ```json
 {
   "id":"anno_...",
-  "paper_id":"example-paper",
+  "paper_id":"1996_progressive_meshes",
   "revision":2,
   "deleted":false,
   "block_id":"body-p3-5",
-  "anchor":{"view":"translation","language":"zh","content_id":"body-p3-5","field":"text_zh","content_version":"example-v3-1","fragments":[]},
+  "anchor":{"view":"translation","language":"zh","content_id":"body-p3-5","field":"text_zh","content_version":"pm-v3-1","fragments":[]},
   "selected_text":"...",
-  "user_note":"这段方法如何工作？",
+  "user_note":"为什么可以使用祖先替代？",
   "status":"answered",
   "unread":true,
   "identity_color":"#497da7",
@@ -149,11 +177,11 @@ POST /api/bridge/register
 {
   "task":{
     "id":"task_<stable hash>",
-    "paper_id":"example-paper",
+    "paper_id":"1996_progressive_meshes",
     "annotation_id":"anno_...",
     "revision":2,
     "state":"claimed",
-    "payload":{"request_id":"request_...","paper_id":"example-paper","annotation_id":"anno_...","revision":2,"user_note":"...","selected_text":"...","anchor":{},"block_id":"...","history":[],"purpose":"followup"},
+    "payload":{"request_id":"request_...","paper_id":"1996_progressive_meshes","annotation_id":"anno_...","revision":2,"user_note":"...","selected_text":"...","anchor":{},"block_id":"...","history":[],"purpose":"followup"},
     "bridge_id":"bridge_abc",
     "claim_token":"<fresh lease nonce>",
     "lease_generation":1,
@@ -223,6 +251,8 @@ core 要求 answer 是非空字符串、sources 是对象数组，总结构不�
 
 Codex 适配器的 `outputSchema` 更严格，每项 source 必须包含 `label/locator/source_id/content_id/url/page`，缺失字符串用 `""`，缺失页码用 `null`。core 本身接受其他宿主提供额外的结构化 source 字段。前端对 URL 与文本还需安全处理。
 
+3.9 Codex 模型 wire 与 outputSchema 严格只含 answer、sources，两个字段均必填，禁止额外属性。answer 必须是完整安全 Markdown；保留 LaTeX、小表格、引用与代码解释，不自动生成图或学习组件。公式、表格、原图及组件选区不强制富输出。新 turn 不请求 answer_content_json、attachments_json 或 study_state_json。适配器仅在恢复已投递旧 turn 时兼容解码旧富字段，再交给现有服务安全校验/CAS；SQLite、历史、JSON 快照与其他宿主的 canonical 富内容读取合同不变。格式成功不证明事实正确。
+
 任务发布时匹配保存的 annotation revision；宿主 `thread_id/turn_id` 只用于定位实际投递与恢复，不代替 revision CAS。模型输出不能自行修改用户问题、锚点、history、status 或 JSON 文件。
 
 ## 4. 未知投递与重启恢复
@@ -248,7 +278,7 @@ Codex 适配器的 `outputSchema` 更严格，每项 source 必须包含 `label/
 
 Codex 适配器恢复流程：
 
-1. 使用持久 `thread_id` 调用 `thread/resume`，然后 `thread/read`，`includeTurns:true`。
+1. 使用持久 `thread_id` 复用已加载的宿主会话；进程重启后才调用 `thread/resume`。恢复不确定投递时再用 `thread/read`，`includeTurns:true`，核对原 turn 并刷新送达记录。
 2. 优先按持久 `turn_id` 找原 turn。若崩溃发生在 turn/start 响应之前，没有保存 turn ID，则按稳定 `clientUserMessageId` 或完整任务标记找到原 userMessage 所属 turn。
 3. 原 turn 为 `completed`：读取该 turn 的最终 `agentMessage`，解析 answer/sources 并重新投递 HTTP result，不开启新 turn。
 4. 原 turn 为 `inProgress`：等待原 turn 完成并持续 heartbeat，收到取消则 interrupt。
@@ -266,7 +296,7 @@ map 顶层 content_version 必须与 paper-data 一致；anchor 可以保留历�
 ## 5. SSE 与快照同步
 
 ```http
-GET /api/events?paper_id=example-paper&after=0&token=<browser token>
+GET /api/events?paper_id=1996_progressive_meshes&after=0&token=<browser token>
 ```
 
 服务返回 `text/event-stream`，支持 `Last-Event-ID` 或 `after`。省略游标时从当前全局序号之后监听，不回放全部历史。单次拉取事件最多 200 条，循环继续读取。约 5 秒空闲时发送 SSE 注释 heartbeat。
@@ -274,7 +304,7 @@ GET /api/events?paper_id=example-paper&after=0&token=<browser token>
 ```text
 id: 48
 event: annotation
-data: {"paper_id":"example-paper","annotation":{"id":"anno_...","revision":2,"status":"answered","unread":true},"revision":48}
+data: {"paper_id":"1996_progressive_meshes","annotation":{"id":"anno_...","revision":2,"status":"answered","unread":true},"revision":48}
 
 id: 49
 event: status
@@ -290,24 +320,26 @@ data: {"bridge_id":"bridge_abc","connected":false,"revision":49}
 使用已安装 skill 的 scripts 与目标 vault 部署样例；将两个路径占位符替换为本机实际目录：
 
 ```powershell
-python "<skill目录>\scripts\deploy_reader.py" --vault "<PaperVault目录>" --paper example-paper
-python "<skill目录>\scripts\migrate_reader_v3.py" --vault "<PaperVault目录>" --paper example-paper
-python "<skill目录>\scripts\open_reader.py" --vault "<PaperVault目录>" example-paper
+python "<skill目录>\scripts\deploy_reader.py" --vault "<PaperVault目录>" --paper 1996_progressive_meshes
+python "<skill目录>\scripts\migrate_reader_v3.py" --vault "<PaperVault目录>" --paper 1996_progressive_meshes
+python "<skill目录>\scripts\open_reader.py" --vault "<PaperVault目录>" 1996_progressive_meshes
 ```
 
 有历史锚点映射时，用以下命令代替普通 migrate 命令：
 
 ```powershell
-python "<skill目录>\scripts\migrate_reader_v3.py" --vault "<PaperVault目录>" --paper example-paper --anchor-map "<PaperVault目录>\papers\example-paper\migration_anchor_map.json"
+python "<skill目录>\scripts\migrate_reader_v3.py" --vault "<PaperVault目录>" --paper 1996_progressive_meshes --anchor-map "<PaperVault目录>\papers\1996_progressive_meshes\migration_anchor_map.json"
 ```
 
 部署脚本检测 `schema_version>=3`，使用 `reader-v3.html→reader.html`、`reader-v3.js`、`styles-v3.css`，递归复制 `assets/math`。公式块必须有 LaTeX，并经过基本括号/分隔符结构检查；这种检查不代替浏览器实际数学渲染 QA。已有 schema v1/v2 的另外论文仍使用原模板与原 `serve_reader.py`；旧服务文件没有替换。
 
-通常启动继承宿主配置，不传 model 或 effort。只在用户明确需要覆盖时使用：
+3.9 Codex 答疑未显式配置模型或档位时，不在 thread/start、thread/resume 或 turn/start 传入对应覆盖参数，沿用宿主默认或已有会话设置。启动与恢复仍应用当前答疑 developerInstructions；用户明确指定的 model/effort 分别覆盖，不修改全局宿主配置。覆盖示例：
 
 ```powershell
-python "<skill目录>\scripts\open_reader.py" --vault "<PaperVault目录>" example-paper --model <host-model-id> --effort <host-supported-effort>
+python "<skill目录>\scripts\open_reader.py" --vault "<PaperVault目录>" 1996_progressive_meshes --model <host-model-id> --effort <host-supported-effort>
 ```
+
+显式启动参数作用于新后台服务；已有服务运行时 launcher 拒绝本次 model/effort 覆盖，需先明确停止，再按所需参数启动，不静默忽略或自动中断任务。生成的“打开阅读器.bat”是默认启动器，不保存一次性 CLI 模型设置。线程 start/resume 仅接受 model 覆盖，effort 仅在 turn/start 传入。
 
 可用启动选项：`--no-open`、`--port 0`、`--bridge codex|mock|none`、`--foreground`、`--codex-bin <absolute executable path>`。`mock` 产生带 `[MOCK 测试回答]` 前缀的测试结果，不是模型回答；`none` 允许保存问题但暂不启动 bridge。`--serve` 保留旧启动命令兼容；`--file` 仅用于文件阅读兜底，v3后台问答仍需服务。
 
@@ -323,6 +355,7 @@ python "<skill目录>\scripts\open_reader.py" --vault "<PaperVault目录>" --sto
 
 ```text
 initialize(clientInfo, capabilities) → initialized
+model/list → inputModalities（按实际thread模型匹配图片能力）
 thread/start 或 thread/resume（read-only sandbox，approvalPolicy=never）
 turn/start（text input，稳定 clientUserMessageId，可选 model/effort，outputSchema）
 item/completed → turn/completed
@@ -332,22 +365,32 @@ turn/interrupt 用于删除、修订、replacement 与停止
 
 最终答案只从对应 thread/turn 的 `agentMessage` 提取，优先 `final_answer`；completion payload 不带最终 item 时按同 turn 读取历史。JSON解析或来源验证失败会记录失败，不把任意宿主文本直接当已完成答案。LaTeX 必须保留反斜杠并使用 `\(...\)` 或 `\[...\]`，数学图片不能替代公式。
 
+图片输入依据 [官方app-server协议](https://learn.chatgpt.com/docs/app-server) 的 model/list.inputModalities，仅匹配宿主实际返回的response/thread模型；未返回实际模型时不把用户配置或目录默认模型当作能力依据。确认有image时，将已登记且哈希核对的本地图片以 turn/start.input 的 localImage 送入宿主。缺模型元数据、未核实视觉能力或读取失败时只发送说明/已校核文字，并标明未传入像素。默认模型由宿主/会话决定，用户显式参数作为请求覆盖；不按目录 isDefault 或视觉能力另选模型，查询元数据也不生成测试回答。
+
+### 答疑原文与图像包
+
+默认输入范围与来源要求遵循[主规则](../SKILL.md#工作范围主规则)。bridge恢复当前选区和必要上下文，以context.reader_body传递overview/explanation可读正文及真实来源，保留内容版本和数据哈希供定位。adapter通过reader_delivery发送首次snapshot及后续delta，未变化正文沿会话复用。
+
+3.10.4 同一 paper、adapter 的 SQLite session mapping 覆盖所有批注和追问，普通任务不创建新线程。已加载线程直接复用，指南、工具声明和输出 schema 保持稳定；只有进程重连才恢复线程。首次发送概览与详解的可读正文，后续只发送新问题、当前选区、变化块、删除身份、必要排序与相关新证据；相同来源索引、PDF身份、标题等也不重复送入。已在该宿主历史出现的 task 与补入的历史交换不重播，旧 SQLite history 仍完整保存。
+
+重启从宿主实际 userMessage 的 snapshot/delta 链重建正文块哈希、顺序和已知问题。宿主返回自己的 rollout 路径时，只读 `.codex/sessions` 下且 session_meta ID 匹配的 JSONL，读取公开 user-message response_item，排除 reasoning 与压缩摘要；这样分页或压缩后的 RPC 视图不会误清空送达记录。没有 rollout 时仅接受完整历史；分页游标、压缩标记或断裂/损坏的 delta 链不能证明初始正文从未发送，因此停止本轮并提示恢复完整历史或使用现有显式重建。完整旧历史确实没有正文时，允许一次初始 snapshot。新线程才重置正文状态，unknown 不作为重发依据。
+
+缺少依据时，宿主dynamic tool `reader_source`按物理页或短查询返回当前PDF的相关原文，绑定PDF哈希并限制每轮范围与容量；只取实际所需材料，覆盖状态据实报告。PDF变更、不可读或无可抽取文字均显式返回，不能据空文本断言原页空白。旧注册text_path仍按补充材料身份使用。
+
+`selected_fields`与`selected_blocks`保留选区实际字段，按块级或章级source_refs、formula_ref、明确图号或式号追踪来源。`selected_source_images`只使用登记图片及已核对SHA-256；原始公式页图单独缓存，不覆盖作者asset-registry。超出本轮图片范围的项标为metadata-only。
+
+最终宿主输入沿用 `localImage` 通道，并再次核对本地路径、图片容器和哈希。像素清单与metadata-only清单明确传给模型；实际模型模态未知时不传像素。SVG仍以已有结构与图注解释，不执行或自动转换任意代码。模型不能声称看过仅提供元数据的图，也不能把教学图当原论文证据。
+
+正文包与最终turn输入检查容量；`context_capacity`和Source packet capacity注明本轮实际字节量、保守token估计及已送达范围。model/list给出实际窗口或宿主配置`context_token_limit`时，计入受信任指南、图片估计和答案预留；超限如实失败，窗口未知时明确unknown。历史由宿主管理，不把新轮估计称作整段会话精确容量。
+
+thread/start 与进程重连的 thread/resume 仅加载一份稳定 `answer_worker_guide.md` 为受信任 developerInstructions，其中已经包含答疑所需的数学规则。每个新 turn 不再重复指南全文。当前规则明确覆盖旧历史中的富生成义务。论文、用户选区和历史继续只作为未受信任数据。普通批注先直接回应所问，补当前缺少前提并按需给例子，原式与证据准确；用户显式要演示时指出已有正文入口，或说明需专门创作任务，不临时开发。新模型 wire 为 answer/sources，旧历史、视觉输入、CAS、暂停/恢复与 unknown 不重发机制保持兼容。
+
+同一线程保证对话连续，不保证历史免费或缓存始终命中。缓存取决于实际相同前缀、模型与宿主压缩等条件；送达记录仅证明曾发送，不代表原文永远保留在模型窗口里。按需补读相关证据，不因压缩自动补发整篇。适配器保存宿主 `thread/tokenUsage/updated` 原始 counters（`server.token_usage[(threadId,turnId)]`），最新完成轮的实测值随 health/heartbeat 保存到现有 bridge info；未收到则保持缺省，不用字节估计冒充 tokenUsage。核验时同时比较实际正文包大小及 host input/cached-input counters，不据线程复用推算缓存命中率。
+
+会话mapping使用generation/CAS，旧generation迟到结果不能写入新会话。重建不会解除unknown对同论文后续任务的阻塞。恢复RPC不可读或认证错误保持unknown，不按“未执行”重新turn/start；已确认失败/中断才可记录failed并供用户重试。
+
 其他宿主可以实现 `bridges/base.py` 的 `HostBridge`：`session/start/wait/recover/interrupt/close`，保持凭据在本机适配器内，并遵守先 ACK、同 paper 串行、unknown 不重发、结果结构化的协议。当前 CLI 只选择内置 codex/mock/none；新增适配器需在 worker/launcher 的适配器选择处登记。core 的 SQLite、HTTP、CAS、事件与数据投影不需要改成某个宿主专用实现。
 
-## 7. 验证与接口兼容性
+## 7. 协议验证
 
-官方协议参考：[OpenAI app-server 文档](https://learn.chatgpt.com/docs/app-server)。宿主接口可能随版本更新；接入时可用本机 `codex app-server --help` 和 `generate-json-schema` 核对接口。模型、认证与运行时由使用者自己的宿主提供。
-
-使用随仓库提供的合成数据测试核心契约，无需真实论文或模型调用：
-
-```sh
-python -m unittest discover -s scripts/tests -p test_reader_v3.py -v
-```
-
-如需验证真实宿主，可显式运行以下命令。它会调用模型，并要求新的专用输出目录；不得对正式文献库注入故障。
-
-```sh
-python scripts/tests/live_verify_bridge.py --live --recover-restart --output <新的专用测试输出目录> --timeout 120
-```
-
-该测试检查后台进程存活、同论文会话复用、丢失结果后的恢复和追问。测试输出属于本机运行资料，不应提交或随 skill 分发。运行时优先复用已有 Python、Node.js 和宿主配置；宿主可执行文件不在 PATH 时用 `--codex-bin` 指定。宿主无法访问登录信息或用户目录时应修复其运行权限，不在 skill 中复制凭据或写死用户目录。
+桥接以[官方app-server协议](https://learn.chatgpt.com/docs/app-server)和实际宿主返回为准，不假定开发机路径、账号或环境变量。后端回归可运行 `python -m unittest discover -s scripts/tests -p test_reader_v3.py -v`。真实宿主验证使用 `scripts/tests/live_verify_bridge.py --live --recover-restart --output <新的专用测试目录>`，会产生真实模型用量，不能对生产库执行故障注入。本机认证和测试日志不随发行包上传。

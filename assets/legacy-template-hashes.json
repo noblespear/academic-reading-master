@@ -1,0 +1,203 @@
+{
+  "reader.html": [
+    "1ccf50e4e890e2aac73fa6bfacf117111ad82e33d7ddd9bd3eaac4afccf0d2a5"
+  ],
+  "reader-v3.js": [
+    "1801c8b4c106c3835b2b4bdf3eb402fd34266b032e95e44ceb22f08084ee7e8a"
+  ],
+  "styles-v3.css": [
+    "865807f3ad3b83425829f2b343263ee8d2c9aa6e1e59a6d01afa16ac8aa2bac1"
+  ],
+  "math/katex.min.css": [
+    "b9ce0e8ce93f0c18c4986fe1f1c3c269d921b56a69e6c97f83a507916b38aab5"
+  ],
+  "math/katex.min.js": [
+    "155f6c2d673c5912e3b48f45d8830eaad18ae1953915939ceb648ea8b9c3e7e2"
+  ],
+  "math/LICENSE": [
+    "766ccc1f306c885aa45542a9846bbd0a505b27a0374f146778171c2254ce18e3"
+  ],
+  "math/vendor.json": [
+    "749797e0593dc6a05ab29254163cfc5595de3521759e577ccad6c7a63d55b2ca"
+  ],
+  "math/fonts/KaTeX_AMS-Regular.ttf": [
+    "dff2f9ffb68d4bdb43f76e66539f5e777c725c8ade5ebfc7aafc7750b53e98a7"
+  ],
+  "math/fonts/KaTeX_AMS-Regular.woff": [
+    "30da91e84c893f875e252689faebdc590b2871145e8adc7f9a9d4dbd8ce0b251"
+  ],
+  "math/fonts/KaTeX_AMS-Regular.woff2": [
+    "0cdd387c9590a1a9f9794560022dbb59654a7d86f187aa0c81495ad42d3a7308"
+  ],
+  "math/fonts/KaTeX_Caligraphic-Bold.ttf": [
+    "34ed03e48ccc0b60c2d7f3a9ed32d8bf8814f5fdd3f1f6cc95aabf5a9dadb23f"
+  ],
+  "math/fonts/KaTeX_Caligraphic-Bold.woff": [
+    "1ae6bd7475590e97e7f145a89e09ccde322f7a6bc0b91607b1c8b8ee28290fed"
+  ],
+  "math/fonts/KaTeX_Caligraphic-Bold.woff2": [
+    "de7701e42cf1f4cf0b766c03fb27977207eee2f4fd5d76fa82188406da43ea4c"
+  ],
+  "math/fonts/KaTeX_Caligraphic-Regular.ttf": [
+    "df54401f594f41dc627f5dc4054aee51b0c09e8b24083991eb1a4dd85ed576c9"
+  ],
+  "math/fonts/KaTeX_Caligraphic-Regular.woff": [
+    "3398dd02302557a793f2863f88e02d96ce10df2abffa07c8e9fa90775116e65c"
+  ],
+  "math/fonts/KaTeX_Caligraphic-Regular.woff2": [
+    "5d53e70ad607c2352162dec9e0923fb54ecdafaccbf604cd8dcf7d00facb989b"
+  ],
+  "math/fonts/KaTeX_Fraktur-Bold.ttf": [
+    "f1ac7b1639619b80d3586794c572a3d5dac143714617c263ecae59d2367b8012"
+  ],
+  "math/fonts/KaTeX_Fraktur-Bold.woff": [
+    "9be7ceb88004ab8ad124082246fbfcca4091e36385d4ec6ed1df67375dad50fb"
+  ],
+  "math/fonts/KaTeX_Fraktur-Bold.woff2": [
+    "74444efd593c005e3f4573b44524704c0af0a937fe911cca9e94068d0d140d3f"
+  ],
+  "math/fonts/KaTeX_Fraktur-Regular.ttf": [
+    "3747328a6909ca2365fb7a24044e65ed2a9061bdbde65e28c648daf0fd0d65f8"
+  ],
+  "math/fonts/KaTeX_Fraktur-Regular.woff": [
+    "5e28753be717dac97f559f49bc10be9cf3c124ddcabda6659d11cb68febc6463"
+  ],
+  "math/fonts/KaTeX_Fraktur-Regular.woff2": [
+    "51814d270d06ff0255dba0799994fa4d8c84d11f09951d47595f4abb1f3602dc"
+  ],
+  "math/fonts/KaTeX_Main-Bold.ttf": [
+    "9fee1f72ef632c2d920387b1ab6a66c660190016099c5382c448d25d3201c7fc"
+  ],
+  "math/fonts/KaTeX_Main-Bold.woff": [
+    "c76c5d696297d51b9cb1639c7da4334f0e7dec81b42b11213b5e25ef671bb822"
+  ],
+  "math/fonts/KaTeX_Main-Bold.woff2": [
+    "379fd3f02949cf1e58b3a50a09c3279a368a28033514db14373e6a25f975614c"
+  ],
+  "math/fonts/KaTeX_Main-BoldItalic.ttf": [
+    "a0c66044b6679a96489f9b1e4aed2b93fa6f327e648658805475410ca682adfb"
+  ],
+  "math/fonts/KaTeX_Main-BoldItalic.woff": [
+    "a6f7ec0d846ac7ad975adb8959c37ed49b94acbc4ae436db9ce9e20287e4a64c"
+  ],
+  "math/fonts/KaTeX_Main-BoldItalic.woff2": [
+    "99cd42a3c072d918f2f44984a807cf7aa16e13545fd0875fc07c6c65f99e715b"
+  ],
+  "math/fonts/KaTeX_Main-Italic.ttf": [
+    "d566480bd3d0fa2d7e62f9a485455762e1c3a1021d6a4f5a55ebd92ccc53e454"
+  ],
+  "math/fonts/KaTeX_Main-Italic.woff": [
+    "f1d6ef86f3b11a528bd5185199bd2443ecb2b0dead96d88674b5a2c12be24bdf"
+  ],
+  "math/fonts/KaTeX_Main-Italic.woff2": [
+    "97479ca6cce906abc961ecac96faa5f9ca2e61b8e7670d475826bcdee9a7c267"
+  ],
+  "math/fonts/KaTeX_Main-Regular.ttf": [
+    "4994d9af43ba4d9654eeb2e707d930993c65b219bb89cf59769a57d8d58da4c4"
+  ],
+  "math/fonts/KaTeX_Main-Regular.woff": [
+    "c6368d87e8a1a3a5d337623d83d8dc4b868f242a9ad476237d6f8d1e0f168cdc"
+  ],
+  "math/fonts/KaTeX_Main-Regular.woff2": [
+    "c2342cd8b869e01752a9321dc17213fc40d4d04c79688c1d43f2cf316abd7866"
+  ],
+  "math/fonts/KaTeX_Math-BoldItalic.ttf": [
+    "4afb17d4eb4cf6b559a064b3a98e6eefdc98194d5a745acda50b4d7da01f8507"
+  ],
+  "math/fonts/KaTeX_Math-BoldItalic.woff": [
+    "850c0af5c2238497febaf5e461d880bf458c341f42f4f330f1b1ab5698b1998e"
+  ],
+  "math/fonts/KaTeX_Math-BoldItalic.woff2": [
+    "6407536dc12b676e5b3f4cf96b101c266b01c5accc78534f07b4df34bd8a0e88"
+  ],
+  "math/fonts/KaTeX_Math-Italic.ttf": [
+    "c97da2c9eaa4d00a91e5fc6e7b8f311cf42739db58cc6c01ffcd210eb4ce6b47"
+  ],
+  "math/fonts/KaTeX_Math-Italic.woff": [
+    "8a8d244581371912b8f3f5a23e2437cb2a59cd9bcaebb0346e722c05737a2571"
+  ],
+  "math/fonts/KaTeX_Math-Italic.woff2": [
+    "7bcfc32ee82a4339ab0cc3d016819ca9e553cc75c82e9f1090c264650b3fc6a8"
+  ],
+  "math/fonts/KaTeX_SansSerif-Bold.ttf": [
+    "3620c2f96d0a5ec15091ba8815e22e04d19650125f16782ddeaef51c79760d87"
+  ],
+  "math/fonts/KaTeX_SansSerif-Bold.woff": [
+    "ece03cfd83e22c212cdef66feb8442d25a083beb988db3f1883f3f9738d750ba"
+  ],
+  "math/fonts/KaTeX_SansSerif-Bold.woff2": [
+    "e99ae51144bf1232efcc1bfe5add36262c6866b0faab24fa75740e1b98577a62"
+  ],
+  "math/fonts/KaTeX_SansSerif-Italic.ttf": [
+    "38dc252c4fd401d02bd237c4ab25fd92b3e15d0caab9512f97ce423ad0050ce4"
+  ],
+  "math/fonts/KaTeX_SansSerif-Italic.woff": [
+    "91ee67500cc0129aa0ace3ac5c61ff1692102f0f31d02b69347fba35dcb75bf2"
+  ],
+  "math/fonts/KaTeX_SansSerif-Italic.woff2": [
+    "00b26ac825e2095056396e0553b8ac26d3f8ad158c3826e28b4c45b385c4714a"
+  ],
+  "math/fonts/KaTeX_SansSerif-Regular.ttf": [
+    "f36ea897e19f4a2e571d1e900e4e3710e438deb05a842486045ba0a3e616a4ad"
+  ],
+  "math/fonts/KaTeX_SansSerif-Regular.woff": [
+    "11e4dc8a6471ff6d6ee561d53d10fde8f7489e798257ff449c5d37c197435605"
+  ],
+  "math/fonts/KaTeX_SansSerif-Regular.woff2": [
+    "68e8c73ef42afd3ccec58bf0fba302cce448938e7fc020a5e31f8a952eee1342"
+  ],
+  "math/fonts/KaTeX_Script-Regular.ttf": [
+    "1c67f068fea8bb09bf099c088b1cf64bd27516a6e07f4684344873564bb66a67"
+  ],
+  "math/fonts/KaTeX_Script-Regular.woff": [
+    "d96cdf2b3bdd4d64a8fd5f74a4c467f123a8a73931cd435889f08ffaf9bf947a"
+  ],
+  "math/fonts/KaTeX_Script-Regular.woff2": [
+    "036d4e95149b69ff9bcc0cd55771efeb25ffa3947293e69acd78d5ac328c684b"
+  ],
+  "math/fonts/KaTeX_Size1-Regular.ttf": [
+    "e9b0c17f7a1bc0bcd8fc38055bc8fecb0f5baaca58728f4f82e4a49a0b6fef37"
+  ],
+  "math/fonts/KaTeX_Size1-Regular.woff": [
+    "c943cc986384f59e86bea5fd7dc50a9c4dfe567a7c05eb40d6790720dead97c9"
+  ],
+  "math/fonts/KaTeX_Size1-Regular.woff2": [
+    "6b47c40166b6dbe21a5dfca7718413f2147fd2399be1ba605d8ad39cedf25dfe"
+  ],
+  "math/fonts/KaTeX_Size2-Regular.ttf": [
+    "a6b2099fb555c60e3a0db3a08842ebf1d732c6eb4e4bf44913613bed4fc4e39b"
+  ],
+  "math/fonts/KaTeX_Size2-Regular.woff": [
+    "2014c523c3210bcc166648c4d4cc57f05b747df07a24277bf71c51e67dc79e3d"
+  ],
+  "math/fonts/KaTeX_Size2-Regular.woff2": [
+    "d04c54219f9eaec6d4d4fd42dfb28785975a4794d6b2fc71e566b9cd6db842dd"
+  ],
+  "math/fonts/KaTeX_Size3-Regular.ttf": [
+    "17a07f72fa79cea72dde0868589594465c3bb14d21ece9f3505b421726dc7d2c"
+  ],
+  "math/fonts/KaTeX_Size3-Regular.woff": [
+    "6ab6b62e9b62dae2c00dd90f791bd10950be0ecc3490d7d6045f51c2e8fe0949"
+  ],
+  "math/fonts/KaTeX_Size3-Regular.woff2": [
+    "73d591271b1604960cb10bb90fee021670af7297017e0e98480b332d11f51995"
+  ],
+  "math/fonts/KaTeX_Size4-Regular.ttf": [
+    "c647367d1dd4e162468717d020e1fc0f1dc5c26ebfdffbe55261713bf88c5877"
+  ],
+  "math/fonts/KaTeX_Size4-Regular.woff": [
+    "99f9c6750b489c9462bf04900bd3f939df9b829339daaaaa99ef5495cdddea58"
+  ],
+  "math/fonts/KaTeX_Size4-Regular.woff2": [
+    "a4af7d414440a1c1790825cfb700cf9cf43b0f2c4b04f0ebc523011ad9853ec0"
+  ],
+  "math/fonts/KaTeX_Typewriter-Regular.ttf": [
+    "ceb0b7b3d56fb5df31e9982b9021397299c3ae80271f3888da84bc72a0e74933"
+  ],
+  "math/fonts/KaTeX_Typewriter-Regular.woff": [
+    "6a5bef232e1c63e20881634e0d606501eb607b0e83ec650acad0b926d8647b99"
+  ],
+  "math/fonts/KaTeX_Typewriter-Regular.woff2": [
+    "71d517d67827787cfabdf186914cc3358eda539e37931941f2b2fd4a21f68c0b"
+  ]
+}

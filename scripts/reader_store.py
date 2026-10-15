@@ -112,10 +112,27 @@ class ReaderStore:
         CREATE TABLE IF NOT EXISTS events (
           seq INTEGER PRIMARY KEY AUTOINCREMENT, paper_id TEXT, kind TEXT NOT NULL,
           body TEXT NOT NULL, created_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS assistant_settings (
+          id INTEGER PRIMARY KEY CHECK(id=1), paused INTEGER NOT NULL DEFAULT 0,
+          adapter TEXT NOT NULL DEFAULT 'codex', updated_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS drafts (
+          paper_id TEXT NOT NULL, id TEXT NOT NULL, revision INTEGER NOT NULL,
+          body TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(paper_id,id));
         """)
         columns = {row[1] for row in self.db.execute("PRAGMA table_info(tasks)")}
         if "lease_generation" not in columns:
             self.db.execute("ALTER TABLE tasks ADD COLUMN lease_generation INTEGER NOT NULL DEFAULT 0")
+        if "session_generation" not in columns:
+            self.db.execute("ALTER TABLE tasks ADD COLUMN session_generation INTEGER NOT NULL DEFAULT 0")
+        session_columns = {row[1] for row in self.db.execute("PRAGMA table_info(sessions)")}
+        if "generation" not in session_columns:
+            self.db.execute("ALTER TABLE sessions ADD COLUMN generation INTEGER NOT NULL DEFAULT 0")
+        if "state" not in session_columns:
+            self.db.execute("ALTER TABLE sessions ADD COLUMN state TEXT NOT NULL DEFAULT 'unknown'")
+        setting_columns = {row[1] for row in self.db.execute("PRAGMA table_info(assistant_settings)")}
+        if "connection_revision" not in setting_columns:
+            self.db.execute("ALTER TABLE assistant_settings ADD COLUMN connection_revision INTEGER NOT NULL DEFAULT 0")
+        self.db.execute("INSERT OR IGNORE INTO assistant_settings(id,paused,adapter,updated_at) VALUES(1,0,'codex',?)", (now_iso(),))
         self.db.commit()
 
     def close(self):
@@ -227,6 +244,9 @@ class ReaderStore:
                    "anchor": anno.get("anchor", {}), "block_id": anno.get("block_id", ""),
                    "history": anno.get("history", [])[-24:], "purpose": purpose,
                    "request_id": anno.get("request_id") or task_id}
+        for key in ("note_content", "attachments", "study_state"):
+            if key in anno:
+                payload[key] = anno[key]
         self.db.execute("INSERT INTO tasks(id,paper_id,annotation_id,revision,state,payload,created_at,updated_at) "
                         "VALUES(?,?,?,?,?,?,?,?)", (task_id, anno["paper_id"], anno["id"], anno["revision"], "queued", json_text(payload), stamp, stamp))
         anno["status"] = "queued"
@@ -234,6 +254,9 @@ class ReaderStore:
         anno["error"] = ""
         anno.setdefault("history", []).append({"task_id": task_id, "revision": anno["revision"],
             "user_note": anno["user_note"], "answer": "", "sources": [], "status": "queued", "created_at": stamp})
+        for key in ("note_content", "attachments", "study_state"):
+            if key in anno:
+                anno["history"][-1][key] = json.loads(json_text(anno[key]))
         return self._task(task_id)
 
     def _task(self, tid):
@@ -264,6 +287,9 @@ class ReaderStore:
                     "user_note": body.get("user_note", body.get("note", "")),
                     "status": "draft", "unread": False, "answer": "", "sources": [], "history": [],
                     "created_at": stamp, "updated_at": stamp, "request_id": body.get("client_request_id")}
+            for key in ("note_content", "attachments", "study_state"):
+                if key in body:
+                    anno[key] = body[key]
             self._validate_fields(anno)
             anno["identity_color"] = self._allocate_color(anno, body.get("identity_color"))
             task = self._queue(anno) if body.get("submit", True) else None
@@ -273,17 +299,143 @@ class ReaderStore:
         self.project(paper)
         return response
 
-    @staticmethod
-    def _validate_fields(anno):
+    def _validate_fields(self, anno):
+        for key, text_key in (("note_content", "user_note"), ("answer_content", "answer")):
+            if key in anno and anno[key] is not None:
+                from content_contract import validate_rich_document, rich_to_text
+                directory = self.paper_dir(anno["paper_id"])
+                from deploy_reader import load_paper_data
+                path = directory / "paper-data.js"
+                catalog = load_paper_data(path).get("learning_catalog") if path.exists() else None
+                if len(json_text(anno[key])) > 1000000:
+                    raise StoreError(400, "oversized " + key)
+                errors, _warnings = validate_rich_document(anno[key], directory, catalog)
+                if errors:
+                    raise StoreError(400, "invalid " + key + ": " + "; ".join(errors[:5]))
+                anno[text_key] = rich_to_text(anno[key])
+            elif key in anno:
+                anno.pop(key)
+        if "attachments" in anno:
+            anno["attachments"] = self.validate_attachments(anno["paper_id"], anno["attachments"])
+        if "study_state" in anno and (not isinstance(anno["study_state"], dict) or len(json_text(anno["study_state"])) > 200000):
+            raise StoreError(400, "invalid study_state")
         for field in ("user_note", "selected_text", "block_id"):
             if not isinstance(anno.get(field), str) or len(anno[field]) > 100000:
                 raise StoreError(400, "invalid " + field)
         if not isinstance(anno.get("anchor"), dict) or len(json_text(anno["anchor"])) > 200000:
             raise StoreError(400, "invalid anchor")
 
+    def validate_attachments(self, paper, attachments):
+        if not isinstance(attachments, list) or len(attachments) > 16:
+            raise StoreError(400, "attachments must be an array of at most 16 images")
+        from annotation_assets import verify_image
+        root = self.paper_dir(paper)
+        output, seen = [], set()
+        for attachment in attachments:
+            if not isinstance(attachment, dict):
+                raise StoreError(400, "invalid attachment")
+            src = attachment.get("src")
+            if not isinstance(src, str) or "\\" in src or ":" in src or src.startswith("/") or any(p.startswith(".") for p in src.split("/")):
+                raise StoreError(400, "attachment must use a confined local asset path")
+            path = (root / src).resolve()
+            if not path.is_relative_to(root) or not path.is_file() or path.stat().st_size > 1024 * 1024:
+                raise StoreError(400, "attachment asset missing, outside paper or oversized")
+            raw = path.read_bytes()
+            try:
+                verify_image(raw, attachment.get("media_type"))
+            except ValueError as exc:
+                raise StoreError(400, str(exc)) from exc
+            digest = hashlib.sha256(raw).hexdigest()
+            if attachment.get("sha256") not in (None, digest):
+                raise StoreError(400, "attachment checksum mismatch")
+            for key in ("id", "alt", "caption"):
+                if key in attachment and (not isinstance(attachment[key], str) or len(attachment[key]) > 10000):
+                    raise StoreError(400, "invalid attachment " + key)
+            if src not in seen:
+                output.append({**attachment, "id": attachment.get("id") or "asset_" + digest[:24], "sha256": digest})
+                seen.add(src)
+        return output
+
+    def settings(self):
+        with self.lock:
+            return dict(self.db.execute("SELECT * FROM assistant_settings WHERE id=1").fetchone())
+
+    def assistant_intent(self, action, paper, request_id, adapter="codex", enable=False):
+        if action not in ("ensure", "pause", "rebuild") or adapter not in ("codex", "mock"):
+            raise StoreError(400, "unsupported assistant action or adapter")
+        if action != "pause":
+            self.paper_dir(paper)
+        if not isinstance(request_id, str) or not request_id or len(request_id) > 200:
+            raise StoreError(400, "request_id is required")
+        body = {"action": action, "paper_id": paper, "adapter": adapter, "enable": bool(enable)}
+        with self.transaction():
+            previous = self._request("@assistant", request_id, body)
+            if previous is not None:
+                return {**previous, "duplicate": True}
+            if action == "pause":
+                self.db.execute("UPDATE assistant_settings SET paused=1,updated_at=? WHERE id=1", (now_iso(),))
+            else:
+                self.db.execute("UPDATE assistant_settings SET adapter=?,paused=CASE WHEN ? THEN 0 ELSE paused END,updated_at=? WHERE id=1",
+                                (adapter, int(enable), now_iso()))
+                if not self.settings()["paused"]:
+                    self.db.execute("UPDATE assistant_settings SET connection_revision=connection_revision+1 WHERE id=1")
+            generation = None
+            if action == "rebuild":
+                session = self.db.execute("SELECT generation FROM sessions WHERE paper_id=? AND adapter=?", (paper, adapter)).fetchone()
+                generation = (session[0] if session else 0) + 1
+                self.db.execute("INSERT INTO sessions(paper_id,adapter,thread_id,updated_at,generation,state) VALUES(?,?,?, ?,?,'unknown') "
+                                "ON CONFLICT(paper_id,adapter) DO UPDATE SET thread_id='',generation=excluded.generation,state='unknown',updated_at=excluded.updated_at",
+                                (paper, adapter, "", now_iso(), generation))
+                # A rebuild never resolves an unconfirmed delivery. Existing turns
+                # remain durable blockers and old-generation replies cannot apply.
+                rows = self.db.execute("SELECT * FROM tasks WHERE paper_id=? AND state IN ('claimed','running')", (paper,)).fetchall()
+                for row in rows:
+                    state = "queued" if row["state"] == "claimed" else "unknown"
+                    self.db.execute("UPDATE tasks SET state=?,error=?,updated_at=? WHERE id=?",
+                                    (state, "session rebuilt; explicit retry or cancel required" if state == "unknown" else None, now_iso(), row["id"]))
+                    if state == "unknown":
+                        self._task_annotation(row, "unknown", "会话已重建；原问题结果未知，请明确重试或取消。")
+            response = {"ok": True, "session_generation": generation}
+            self._remember("@assistant", request_id, body, response)
+            self._event(None, "status", {"assistant_action": action, "paper_id": paper})
+        if action == "rebuild":
+            self.project(paper)
+        return response
+
+    def list_drafts(self, paper):
+        self.paper_dir(paper)
+        with self.lock:
+            return {"drafts": [{"id": row["id"], "revision": row["revision"], "data": json.loads(row["body"]), "updated_at": row["updated_at"]}
+                              for row in self.db.execute("SELECT * FROM drafts WHERE paper_id=? ORDER BY updated_at", (paper,))]}
+
+    def save_draft(self, paper, body):
+        self.paper_dir(paper)
+        draft_id, data = body.get("id"), body.get("data")
+        if not isinstance(draft_id, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,180}", draft_id) or not isinstance(data, dict) or len(json_text(data)) > 200000:
+            raise StoreError(400, "invalid or oversized draft")
+        with self.transaction():
+            row = self.db.execute("SELECT * FROM drafts WHERE paper_id=? AND id=?", (paper, draft_id)).fetchone()
+            if row and body.get("revision") != row["revision"]:
+                raise StoreError(409, "draft revision conflict", {"id": draft_id, "revision": row["revision"], "data": json.loads(row["body"]), "updated_at": row["updated_at"]})
+            if not row and body.get("revision") not in (None, 0):
+                raise StoreError(409, "draft no longer exists")
+            draft = {"id": draft_id, "revision": row["revision"] + 1 if row else 1, "data": data, "updated_at": now_iso()}
+            self.db.execute("INSERT INTO drafts VALUES(?,?,?,?,?) ON CONFLICT(paper_id,id) DO UPDATE SET revision=excluded.revision,body=excluded.body,updated_at=excluded.updated_at",
+                            (paper, draft_id, draft["revision"], json_text(data), draft["updated_at"]))
+        return {"draft": draft}
+
+    def delete_draft(self, paper, draft_id, revision):
+        self.paper_dir(paper)
+        with self.transaction():
+            row = self.db.execute("SELECT revision FROM drafts WHERE paper_id=? AND id=?", (paper, draft_id)).fetchone()
+            if row and row[0] != revision:
+                raise StoreError(409, "draft revision conflict")
+            self.db.execute("DELETE FROM drafts WHERE paper_id=? AND id=?", (paper, draft_id))
+        return {"ok": True}
+
     def edit(self, paper, aid, body, action="edit"):
         self.paper_dir(paper)
-        if action == "followup" and (not isinstance(body.get("user_note"), str) or not body["user_note"].strip()):
+        if action == "followup" and not body.get("note_content") and (not isinstance(body.get("user_note"), str) or not body["user_note"].strip()):
             raise StoreError(400, "followup user_note is required")
         with self.transaction():
             request_body = {"action": action, "annotation_id": aid, **body}
@@ -295,6 +447,11 @@ class ReaderStore:
             if action == "read":
                 anno["unread"] = False
                 task = None
+            elif action == "cancel":
+                self.db.execute("UPDATE tasks SET state='cancelled',updated_at=? WHERE paper_id=? AND annotation_id=? AND state IN ('queued','claimed','running','unknown')", (now_iso(), paper, aid))
+                anno["status"], anno["error"] = "cancelled", ""
+                anno["revision"] += 1
+                task = None
             else:
                 # Any content revision invalidates previous results. Running old turns
                 # stay in tasks and block same-paper delivery until settled/expired.
@@ -302,7 +459,9 @@ class ReaderStore:
                 anno["request_id"] = body.get("client_request_id")
                 anno["updated_at"] = now_iso()
                 if action != "retry":
-                    for key in ("user_note", "selected_text", "anchor", "block_id"):
+                    if "user_note" in body and "note_content" not in body:
+                        anno.pop("note_content", None)
+                    for key in ("user_note", "selected_text", "anchor", "block_id", "note_content", "attachments", "study_state"):
                         if key in body:
                             anno[key] = body[key]
                 self._validate_fields(anno)
@@ -318,6 +477,7 @@ class ReaderStore:
                 anno["unread"] = False
                 anno["answer"], anno["sources"] = "", []
                 anno.pop("answer_latex", None)
+                anno.pop("answer_content", None)
                 task = self._queue(anno, action) if action in ("followup", "retry") or body.get("submit", False) else None
             self._save(anno)
             response = {"annotation": anno, "task": task}
@@ -336,7 +496,7 @@ class ReaderStore:
             self._cas(anno, revision)
             anno.update(deleted=True, revision=anno["revision"] + 1, updated_at=now_iso(), unread=False)
             self.db.execute("UPDATE tasks SET state='cancelled',updated_at=? WHERE paper_id=? AND annotation_id=? "
-                            "AND state IN ('queued','claimed')", (now_iso(), paper, aid))
+                            "AND state IN ('queued','claimed','running','unknown')", (now_iso(), paper, aid))
             self._save(anno)
         self.project(paper)
         return {"ok": True, "annotation": anno}
@@ -415,6 +575,9 @@ class ReaderStore:
                     anno["answered_at"] = old["answered_at"]
                 if "answer_latex" in old:
                     anno["answer_latex"] = old["answer_latex"]
+                for key in ("note_content", "answer_content", "attachments", "study_state"):
+                    if key in old:
+                        anno[key] = old[key]
                 anno["history"] = json.loads(json_text(old["history"])) if old.get("history") else ([{"task_id": "legacy_" + aid, "revision": anno["revision"],
                     "user_note": anno["user_note"], "answer": answer, "sources": anno["sources"],
                     "status": "answered", "created_at": stamp, "answered_at": old.get("answered_at")}] if answer else [])
@@ -422,6 +585,11 @@ class ReaderStore:
                     for turn in anno["history"]:
                         if turn.get("answer") == answer and "answer_latex" not in turn:
                             turn["answer_latex"] = old["answer_latex"]
+                for turn in anno["history"]:
+                    if turn.get("answer") == answer:
+                        for key in ("note_content", "answer_content", "attachments", "study_state"):
+                            if key in anno and key not in turn:
+                                turn[key] = anno[key]
                 self._save(anno)
                 count += 1
         self.project(paper)
@@ -449,7 +617,7 @@ class ReaderStore:
         return {"ok": True}
 
     def _bridge_available(self):
-        return bool(self.db.execute("SELECT 1 FROM bridges WHERE seen_at>? LIMIT 1", (self.clock() - 60,)).fetchone())
+        return not self.settings()["paused"] and bool(self.db.execute("SELECT 1 FROM bridges WHERE seen_at>? LIMIT 1", (self.clock() - 60,)).fetchone())
 
     def expire_leases(self):
         with self.transaction():
@@ -462,7 +630,7 @@ class ReaderStore:
                 self.db.execute("UPDATE tasks SET state=?,error=?,updated_at=? WHERE id=?",
                     (state, "delivery outcome unknown; resume session or explicitly retry" if state == "unknown" else None, now_iso(), row["id"]))
                 if state == "unknown":
-                    self._task_annotation(row, "failed", "投递结果未知；可恢复原会话，或明确重试。")
+                    self._task_annotation(row, "unknown", "投递结果未知；可恢复原会话，或明确重试、取消。")
         for paper in set(row["paper_id"] for row in rows):
             self.project(paper)
         return len(rows)
@@ -471,6 +639,8 @@ class ReaderStore:
         self.expire_leases()
         with self.transaction():
             self._touch_bridge(bridge_id)
+            if self.settings()["paused"]:
+                return {"task": None, "paused": True}
             # A paper can have one host turn at a time, even across bridge processes.
             row = self.db.execute("SELECT t.* FROM tasks t WHERE t.state='queued' AND NOT EXISTS "
                 "(SELECT 1 FROM tasks busy WHERE busy.paper_id=t.paper_id AND busy.state IN ('claimed','running','unknown')) "
@@ -482,9 +652,19 @@ class ReaderStore:
                 (bridge_id, nonce, self.clock() + lease_seconds, now_iso(), row["id"]))
             task = self._task(row["id"])
             bridge = self.db.execute("SELECT adapter FROM bridges WHERE id=?", (bridge_id,)).fetchone()
-            sess = self.db.execute("SELECT thread_id FROM sessions WHERE paper_id=? AND adapter=?", (task["paper_id"], bridge[0])).fetchone()
-            task["session_thread_id"] = sess[0] if sess else None
+            self.db.execute("INSERT OR IGNORE INTO sessions(paper_id,adapter,thread_id,updated_at,generation,state) VALUES(?,?,?, ?,0,'unknown')", (task["paper_id"], bridge[0], "", now_iso()))
+            sess = self.db.execute("SELECT thread_id,generation FROM sessions WHERE paper_id=? AND adapter=?", (task["paper_id"], bridge[0])).fetchone()
+            self.db.execute("UPDATE tasks SET session_generation=? WHERE id=?", (sess[1], task["id"]))
+            task["session_generation"] = sess[1]
+            task["session_thread_id"] = sess[0] or None
             return {"task": task}
+
+    def _current_session(self, task):
+        bridge = self.db.execute("SELECT adapter FROM bridges WHERE id=?", (task["bridge_id"],)).fetchone()
+        if not bridge:
+            return False
+        session = self.db.execute("SELECT generation FROM sessions WHERE paper_id=? AND adapter=?", (task["paper_id"], bridge[0])).fetchone()
+        return session is None and task["session_generation"] == 0 or session is not None and session[0] == task["session_generation"]
 
     def _owned(self, task_id, bridge_id, claim_token):
         task = self._task(task_id)
@@ -496,6 +676,8 @@ class ReaderStore:
         with self.transaction():
             self._touch_bridge(bid)
             task = self._owned(tid, bid, nonce)
+            if not self._current_session(task):
+                raise StoreError(409, "session generation changed; explicit resolution required")
             if task["state"] == "claimed" and (task["lease_until"] or 0) < self.clock():
                 raise StoreError(409, "claim lease expired before acknowledgement")
             if task["state"] not in ("claimed", "running", "unknown"):
@@ -504,22 +686,32 @@ class ReaderStore:
                 (thread_id, turn_id, self.clock()+45, now_iso(), tid))
             if thread_id:
                 adapter = self.db.execute("SELECT adapter FROM bridges WHERE id=?", (bid,)).fetchone()[0]
-                self.db.execute("INSERT INTO sessions VALUES(?,?,?,?) ON CONFLICT(paper_id,adapter) "
-                    "DO UPDATE SET thread_id=excluded.thread_id,updated_at=excluded.updated_at", (task["paper_id"], adapter, thread_id, now_iso()))
+                current = self.db.execute("SELECT thread_id,generation FROM sessions WHERE paper_id=? AND adapter=?", (task["paper_id"], adapter)).fetchone()
+                if current and current[0] and current[0] != thread_id:
+                    raise StoreError(409, "session thread mapping changed")
+                self.db.execute("INSERT INTO sessions(paper_id,adapter,thread_id,updated_at,generation,state) VALUES(?,?,?,?,?,'connected') ON CONFLICT(paper_id,adapter) "
+                    "DO UPDATE SET thread_id=excluded.thread_id,updated_at=excluded.updated_at,state='connected' WHERE sessions.generation=excluded.generation", (task["paper_id"], adapter, thread_id, now_iso(), task["session_generation"]))
             self._task_annotation(task, "running")
         self.project(task["paper_id"])
         return {"ok": True}
 
-    def heartbeat(self, bid, tasks=()):
+    def heartbeat(self, bid, tasks=(), info=None):
         controls = []
         with self.transaction():
             self._touch_bridge(bid)
+            if info is not None:
+                if not isinstance(info, dict) or len(json_text(info)) > 20000:
+                    raise StoreError(400, "invalid bridge health info")
+                old = json.loads(self.db.execute("SELECT info FROM bridges WHERE id=?", (bid,)).fetchone()[0])
+                if info.get("health") in ("ready", "unknown") and "error" not in info:
+                    old.pop("error", None)
+                self.db.execute("UPDATE bridges SET info=? WHERE id=?", (json_text({**old, **info}), bid))
             for item in tasks:
                 task = self._owned(item["task_id"], bid, item["claim_token"])
                 if task["state"] in ("claimed", "running", "unknown"):
                     self.db.execute("UPDATE tasks SET lease_until=? WHERE id=?", (self.clock()+45, task["id"]))
                 anno = self._get(task["paper_id"], task["annotation_id"], True)
-                if anno.get("deleted") or anno["revision"] != task["revision"] or task["state"] == "cancelled":
+                if anno.get("deleted") or anno["revision"] != task["revision"] or task["state"] == "cancelled" or not self._current_session(task):
                     controls.append({"task_id": task["id"], "action": "interrupt", "thread_id": task["thread_id"], "turn_id": task["turn_id"]})
         return {"ok": True, "controls": controls}
 
@@ -533,39 +725,75 @@ class ReaderStore:
                 turn["status"] = status
                 if result:
                     turn.update(answer=result["answer"], sources=result["sources"], answered_at=now_iso())
+                    for key in ("answer_content", "study_state"):
+                        if key in result:
+                            turn[key] = {**turn.get(key, {}), **result[key]} if key == "study_state" else result[key]
+                    turn["attachments"] = self._merge_attachments(turn.get("attachments", []), result.get("attachments", []))
                 if error:
                     turn["error"] = error
         if result:
             anno.pop("answer_latex", None)
             anno.update(answer=result["answer"], sources=result["sources"], unread=True, answered_at=now_iso())
+            for key in ("answer_content", "study_state"):
+                if key in result:
+                    anno[key] = {**anno.get(key, {}), **result[key]} if key == "study_state" else result[key]
+            anno["attachments"] = self._merge_attachments(anno.get("attachments", []), result.get("attachments", []))
         self._save(anno)
         return True
 
     def result(self, tid, bid, nonce, result=None, error=None):
         if result is not None:
+            if not isinstance(result, dict):
+                raise StoreError(400, "invalid result")
+            result = json.loads(json_text(result))
+            with self.lock:
+                task_paper = self._task(tid)["paper_id"]
+            validation = {**result, "paper_id": task_paper, "user_note": "", "selected_text": "", "block_id": "", "anchor": {}}
+            self._validate_fields(validation)
+            result["answer"] = validation.get("answer", result.get("answer"))
             if not isinstance(result, dict) or not isinstance(result.get("answer"), str) or not result["answer"].strip() or not isinstance(result.get("sources"), list):
                 raise StoreError(400, "result must contain nonempty answer:string and sources:array")
             if len(json_text(result)) > 1000000 or any(not isinstance(s, dict) for s in result["sources"]):
                 raise StoreError(400, "invalid sources or oversized result")
-            result = {"answer": result["answer"], "sources": result["sources"]}
-            with self.lock:
-                task_paper = self._task(tid)["paper_id"]
+            result = {key: result[key] for key in ("answer", "sources", "answer_content", "attachments", "study_state") if key in result and result[key] is not None}
+            if "attachments" in result:
+                result["attachments"] = validation["attachments"]
             self.validate_sources(task_paper, result["sources"])
         elif not error:
             raise StoreError(400, "result or error required")
         with self.transaction():
             task = self._owned(tid, bid, nonce)
+            if not self._current_session(task):
+                return {"ok": True, "applied": False, "stale_generation": True}
             if task["state"] in ("completed", "failed", "stale", "cancelled"):
                 return {"ok": True, "applied": False, "duplicate": True}
             if result is not None and task["state"] not in ("running", "unknown"):
                 raise StoreError(409, "answer requires acknowledged delivery")
             self.db.execute("UPDATE tasks SET state=?,result=?,error=?,updated_at=? WHERE id=?",
                 ("completed" if result else "failed", json_text(result) if result else None, str(error or ""), now_iso(), tid))
+            if result:
+                adapter = self.db.execute("SELECT adapter FROM bridges WHERE id=?", (bid,)).fetchone()[0]
+                self.db.execute("UPDATE sessions SET state='ready',updated_at=? WHERE paper_id=? AND adapter=? AND generation=?", (now_iso(), task["paper_id"], adapter, task["session_generation"]))
             applied = self._task_annotation(task, "answered" if result else "failed", str(error or ""), result)
             if not applied:
                 self.db.execute("UPDATE tasks SET state='stale' WHERE id=?", (tid,))
         self.project(task["paper_id"])
         return {"ok": True, "applied": applied}
+
+    @staticmethod
+    def _merge_attachments(first, second):
+        merged = {item.get("src") or item.get("id"): item for item in first}
+        merged.update({item.get("src") or item.get("id"): item for item in second})
+        return list(merged.values())
+
+    def mark_unknown(self, tid, bid, nonce, error):
+        with self.transaction():
+            task = self._owned(tid, bid, nonce)
+            if task["state"] in ("running", "unknown"):
+                self.db.execute("UPDATE tasks SET state='unknown',error=?,updated_at=? WHERE id=?", (str(error), now_iso(), tid))
+                self._task_annotation(task, "unknown", str(error))
+        self.project(task["paper_id"])
+        return {"ok": True}
 
     def validate_sources(self, paper, sources):
         """Citations may only identify known paper blocks and positive PDF pages.
@@ -581,19 +809,41 @@ class ReaderStore:
         blocks = {}
         known_pages = set()
         views = [data.get("sections", [])]
+        modern = data.get("content_contract_version") == "3.2"
+        def actual_blocks(roots):
+            for block in roots:
+                yield block
+                if modern and block.get("type") in ("details", "quote"):
+                    yield from actual_blocks(block.get("blocks", []))
         for name in ("overview", "explanation"):
             view = data.get(name, {})
             if isinstance(view, dict):
                 views.append(view.get("sections", []))
         for sections in views:
             for section in sections:
-                for block in section.get("blocks", []):
+                if type(section.get("page")) is int:
+                    known_pages.add(section["page"])
+                for ref in section.get("source_refs", []):
+                    if isinstance(ref, dict) and type(ref.get("page")) is int:
+                        known_pages.add(ref["page"])
+                for block in actual_blocks(section.get("blocks", [])):
                     blocks[block.get("id")] = block
                     if type(block.get("page")) is int:
                         known_pages.add(block["page"])
                     for ref in block.get("source_refs", []):
                         if isinstance(ref, dict) and type(ref.get("page")) is int:
                             known_pages.add(ref["page"])
+        page_limit = max(known_pages) if known_pages else None
+        if any(source.get("page") is not None for source in sources):
+            # Deferred readers need not transcribe every original page. The
+            # current hash-verified PDF, rather than registered refs, sets bounds.
+            from qa_source_evidence import pdf_text_evidence
+            try:
+                evidence = pdf_text_evidence(self.paper_dir(paper))
+            except (OSError, ValueError, RuntimeError) as exc:
+                raise StoreError(400, "cannot verify source.pdf citation page bounds: " + str(exc)) from exc
+            if evidence.get("status") == "complete":
+                page_limit = evidence["page_count"]
         for source in sources:
             content_id = source.get("content_id") or source.get("block_id")
             if content_id and content_id not in blocks:
@@ -601,7 +851,7 @@ class ReaderStore:
             page = source.get("page")
             if page is not None and (type(page) is not int or page < 1):
                 raise StoreError(400, "citation page must be a positive PDF page")
-            if page is not None and known_pages and page > max(known_pages):
+            if page is not None and page_limit is not None and page > page_limit:
                 raise StoreError(400, "citation page exceeds available paper evidence")
             url = source.get("url", "")
             if url and (not isinstance(url, str) or not re.match(r"^https?://", url)):
@@ -609,16 +859,20 @@ class ReaderStore:
 
     def recoverable(self, bid):
         with self.lock:
+            if self.settings()["paused"]:
+                return {"tasks": [], "paused": True}
             bridge = self.db.execute("SELECT adapter FROM bridges WHERE id=?", (bid,)).fetchone()
             if not bridge:
                 raise StoreError(409, "bridge must register first")
             rows = self.db.execute("SELECT t.* FROM tasks t JOIN bridges b ON b.id=t.bridge_id "
                                    "WHERE t.state IN ('running','unknown') AND b.adapter=? ORDER BY t.rowid", (bridge[0],)).fetchall()
-            return {"tasks": [dict(r) for r in rows]}
+            return {"tasks": [dict(r) for r in rows if self._current_session(dict(r))]}
 
     def adopt(self, tid, bid):
         with self.transaction():
             task = self._task(tid)
+            if not self._current_session(task):
+                raise StoreError(409, "old session generation needs explicit retry or cancel")
             old_bridge = self.db.execute("SELECT adapter,seen_at FROM bridges WHERE id=?", (task["bridge_id"],)).fetchone()
             new_bridge = self.db.execute("SELECT adapter FROM bridges WHERE id=?", (bid,)).fetchone()
             if not old_bridge or not new_bridge or old_bridge[0] != new_bridge[0]:
@@ -641,12 +895,49 @@ class ReaderStore:
                                    (seq, paper, paper, limit)).fetchall()
             return [{"seq": row["seq"], "kind": row["kind"], "data": {**json.loads(row["body"]), "revision": row["seq"]}} for row in rows]
 
-    def status(self):
+    def status(self, paper=None, service_instance_id="", connecting=False):
+        if paper:
+            self.paper_dir(paper)
         with self.lock:
             rows = self.db.execute("SELECT id,adapter,seen_at,info FROM bridges").fetchall()
             bridges = [{"id": r["id"], "adapter": r["adapter"], "connected": r["seen_at"] > self.clock()-60,
                         "last_seen": r["seen_at"], "info": json.loads(r["info"])} for r in rows]
             counts = {r[0]: r[1] for r in self.db.execute("SELECT state,COUNT(*) FROM tasks GROUP BY state")}
+            paper_counts = {r[0]: r[1] for r in self.db.execute("SELECT state,COUNT(*) FROM tasks WHERE (? IS NULL OR paper_id=?) GROUP BY state", (paper, paper))}
+            settings = self.settings()
+            connected = [b for b in bridges if b["connected"]]
+            if service_instance_id:
+                connected = [b for b in connected if b["info"].get("service_instance_id") in (None, service_instance_id)]
+            health = "unknown"
+            message = "答疑未连接"
+            state = "connecting" if connecting else "waiting"
+            if connected:
+                latest = max(connected, key=lambda b: b["last_seen"])
+                health = latest["info"].get("health", "unknown")
+                if health not in ("ready", "unknown", "unavailable"):
+                    health = "unknown"
+                state = "ready" if health == "ready" else "error" if health == "unavailable" else "connected"
+                message = "答疑可用" if health == "ready" else latest["info"].get("error") or "宿主已连接，答疑尚未验证"
+            else:
+                failures = [b for b in bridges if b["info"].get("health") == "unavailable" and b["info"].get("service_instance_id") in (None, service_instance_id)]
+                if failures:
+                    state, health = "error", "unavailable"
+                    message = failures[-1]["info"].get("error") or "宿主连接失败，请检查登录与配置"
+            if connecting and not connected and state == "connecting":
+                message = "正在连接答疑"
+            blocked = [{"task_id": r["id"], "annotation_id": r["annotation_id"], "error": r["error"] or "投递结果未知", "session_generation": r["session_generation"]}
+                       for r in self.db.execute("SELECT * FROM tasks WHERE state='unknown' AND (? IS NULL OR paper_id=?)", (paper, paper))]
+            if blocked:
+                state, message = "unknown", "问题结果未知；请恢复原任务，或明确重试、取消。"
+            actions = ["ensure", "pause"] + (["rebuild"] if paper else [])
+            if settings["paused"]:
+                state, message, actions = "paused", "答疑已暂停", ["enable"] + (["rebuild"] if paper else [])
+            session = self.db.execute("SELECT generation,state FROM sessions WHERE paper_id=? AND adapter=?", (paper, settings["adapter"])).fetchone() if paper else None
+            assistant = {"enabled": not bool(settings["paused"]), "state": state, "message": message,
+                         "allowed_actions": actions, "pending_count": sum(paper_counts.get(s, 0) for s in ("queued", "claimed", "running", "unknown")),
+                         "service_instance_id": service_instance_id, "health": health,
+                         "session_generation": session[0] if session else 0, "session_state": session[1] if session else "unknown",
+                         "blocked_tasks": blocked, "pause_scope": "vault"}
             unread = self.db.execute("SELECT body FROM annotations WHERE deleted=0").fetchall()
             return {"api_version": 3, "bridges": bridges, "bridge_available": self._bridge_available(), "counts": counts,
-                    "unread_count": sum(bool(json.loads(r[0]).get("unread")) for r in unread), "revision": self.event_seq()}
+                    "assistant": assistant, "unread_count": sum(bool(json.loads(r[0]).get("unread")) for r in unread), "revision": self.event_seq()}

@@ -1,9 +1,12 @@
 """Deterministic local adapter; never impersonates a live model answer."""
 import time
-from .base import HostBridge, UnknownDelivery
+from .base import HostBridge, UnknownDelivery, ConfirmedFailure
 
 
 class MockBridge(HostBridge):
+    def health(self):
+        return {"health": "ready", "image_input": "unsupported", "test_only": True}
+
     def __init__(self, config):
         self.config = config
         self.turns = {}
@@ -20,7 +23,7 @@ class MockBridge(HostBridge):
         deadline = time.monotonic() + float(self.config.get("mock_delay", 0.2))
         while time.monotonic() < deadline:
             if pulse():
-                raise RuntimeError("Mock turn interrupted")
+                raise ConfirmedFailure("Mock turn interrupted")
             time.sleep(0.05)
         turn = self.turns[turn_id]
         return {"answer": "[MOCK 测试回答] " + turn["task"]["payload"]["user_note"],

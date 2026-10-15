@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="670" viewBox="0 0 800 670" role="img" aria-labelledby="title desc">
+  <title id="title">缓存请求怎样经过LRU处理</title>
+  <desc id="desc">先按标识查找。命中则取出已有数据并更新访问顺序；未命中则读取原始存储，空间满时淘汰最久未访问项，插入新项后返回数据。</desc>
+  <rect width="800" height="670" fill="#ffffff"/>
+  <g fill="#f0f5fa" stroke="#aec4d7" stroke-width="1.3">
+    <rect x="250" y="18" width="300" height="58" rx="7"/>
+    <rect x="250" y="112" width="300" height="58" rx="7"/>
+    <rect x="30" y="233" width="335" height="82" rx="7"/>
+    <rect x="435" y="233" width="335" height="82" rx="7"/>
+    <rect x="30" y="408" width="335" height="72" rx="7"/>
+    <rect x="435" y="351" width="335" height="72" rx="7"/>
+    <rect x="435" y="457" width="335" height="72" rx="7"/>
+    <rect x="250" y="591" width="300" height="58" rx="7"/>
+  </g>
+  <g fill="none" stroke="#607f99" stroke-width="2">
+    <path d="M400 76V105M400 170V197H198V226M400 197H603V226M198 315V401M603 315V344M603 423V450M198 480V557H400V584M603 529V557H400"/>
+  </g>
+  <g fill="#607f99">
+    <path d="m395 101 5 9 5-9z m-202 121 5 9 5-9z m405 0 5 9 5-9z m-405 175 5 9 5-9z m405-57 5 9 5-9z m0 106 5 9 5-9z m-203 134 5 9 5-9z"/>
+  </g>
+  <g font-family="Microsoft YaHei,Arial,sans-serif" text-anchor="middle" fill="#233b4d" font-size="18">
+    <text x="400" y="54">新的数据读取请求</text>
+    <text x="400" y="148">根据数据标识查找缓存</text>
+    <text x="198" y="263">命中：取出现有数据</text>
+    <text x="198" y="291" font-size="15">这次不必从原存储位置重新读取</text>
+    <text x="603" y="263">未命中：读取原始存储</text>
+    <text x="603" y="291" font-size="15">取得请求所需的数据</text>
+    <text x="198" y="438">更新这项数据的访问记录</text>
+    <text x="198" y="465" font-size="15">把它记为最近访问</text>
+    <text x="603" y="381">若缓存空间已满</text>
+    <text x="603" y="408" font-size="15">移出最久没有被访问的一项</text>
+    <text x="603" y="487">把新数据写入缓存</text>
+    <text x="603" y="514" font-size="15">同时把它记为最近访问</text>
+    <text x="400" y="627">向请求方返回数据</text>
+  </g>
+</svg>

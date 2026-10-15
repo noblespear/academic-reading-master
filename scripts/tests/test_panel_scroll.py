@@ -68,7 +68,7 @@ def main():
                 const body = document.getElementById('panel-body');
                 body.scrollTop = 390;
                 window.originalAnswer = body.querySelector('.answer-content');
-                const text = originalAnswer.querySelector('p').firstChild;
+                const text = originalAnswer.querySelector('.rich-paragraph .rich-text, p').firstChild;
                 const range = document.createRange();
                 range.setStart(text, 0); range.setEnd(text, 6);
                 getSelection().removeAllRanges(); getSelection().addRange(range);

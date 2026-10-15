@@ -15,12 +15,16 @@ TOP_FILES = ('SKILL.md', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md',
              'requirements.txt', 'requirements-dev.txt', 'VERSION', '.gitignore')
 SUFFIXES = {
     'references': {'.md'},
-    'scripts': {'.py', '.cjs', '.js', '.svg'},
-    'assets': {'.html', '.js', '.css', '.json', '.woff', '.woff2', '.ttf'},
+    'scripts': {'.py', '.cjs', '.js', '.svg', '.json', '.png', '.jpg', '.jpeg', '.webp'},
+    'assets': {'.html', '.js', '.css', '.json', '.svg', '.png', '.jpg', '.jpeg', '.webp', '.woff', '.woff2', '.ttf'},
+    'schemas': {'.json'},
     'tools': {'.py'},
+    'vendor': {'.md', '.yaml', '.json', '.py', '.js', '.css', '.html'},
 }
-EXCLUDED = {'__pycache__', 'artifacts', '.git', 'node_modules', '.reader',
+EXCLUDED = {'__pycache__', 'artifacts', 'artifacts-novice', '.git', 'node_modules', '.reader',
             'PaperVault', 'dist', 'outputs', 'validation'}
+# Private installed upstream material has no public redistribution grant.
+PRIVATE_UPSTREAM = ('vendor/visualize', 'vendor/visualize-source.json')
 
 
 def source_files():
@@ -36,13 +40,15 @@ def source_files():
             raise ValueError(f'Symlinked source root: {directory}')
         for path in sorted(base.rglob('*')):
             relative = path.relative_to(ROOT)
+            if any(relative.as_posix() == item or relative.as_posix().startswith(item + '/') for item in PRIVATE_UPSTREAM):
+                continue
             if any(part in EXCLUDED for part in relative.parts):
                 continue
             if path.is_symlink():
                 raise ValueError(f'Symlink in source: {relative}')
             if not path.is_file():
                 continue
-            if path.suffix not in suffixes and not (directory == 'assets' and path.name == 'LICENSE'):
+            if path.suffix not in suffixes and not (directory in ('assets', 'vendor') and path.name == 'LICENSE'):
                 raise ValueError(f'Unexpected distribution file: {relative}')
             if not path.resolve().is_relative_to(ROOT.resolve()):
                 raise ValueError(f'Source outside repository: {relative}')

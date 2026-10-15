@@ -1,0 +1,41 @@
+{
+  "preset": "system",
+  "overview": [
+    {
+      "id": "problem",
+      "title": "问题背景",
+      "task": "研究任务、实际困难与已有办法的不足。"
+    },
+    {
+      "id": "method",
+      "title": "方法框架",
+      "task": "核心思路、功能模块与真实依赖，前部放完整method_pipeline方法总图。"
+    },
+    {
+      "id": "innovation",
+      "title": "创新点",
+      "task": "相较此前做法的具体改变、作用及所属模块。"
+    },
+    {
+      "id": "evaluation",
+      "title": "实验与效果",
+      "task": "关键实验怎样验证主张，指标/观察含义、主要结果与取舍。"
+    },
+    {
+      "id": "cost",
+      "title": "开销与论文边界",
+      "task": "核验论文/补充与官方仓库的资源代价、成立条件和解决范围。"
+    }
+  ],
+  "explanation": [
+    {
+      "id": "source-section",
+      "title": "按原论文大章节展开",
+      "task": "保留原论文大章节及顺序，在对应位置补前提、中间推理和数学，随文插入并解释原图表。"
+    }
+  ],
+  "component_suggestions": [
+    "method_pipeline"
+  ],
+  "authoring_note": "日常只读 references/reader_workflow.md；本清单只定位待填内容，专题规则遇到对应问题再查。"
+}

@@ -1,0 +1,12 @@
+{
+  "base":"complete-cache-example.json",
+  "cases":[
+    {"name":"translation-learning","patch_path":["sections",0,"blocks",0,"learning"],"value":{"id":"wrong-layer","plain_summary":"不应自动插入翻译。"},"expected_path":"translation.sections.0.blocks.0.learning"},
+    {"name":"concept-cycle","patch_path":["learning_catalog","concepts",0,"prerequisite_ids"],"value":["read"],"expected_path":"learning_catalog.concepts"},
+    {"name":"formula-without-purpose","delete_path":["explanation","sections",1,"blocks",0,"learning","formula_explanations",0,"purpose"],"expected_path":"formula_explanations.0.purpose"},
+    {"name":"unknown-aid","patch_path":["overview","sections",0,"blocks",0,"learning","aid_ids"],"value":["missing-aid"],"expected_path":"learning.aid_ids"},
+    {"name":"custom-js","patch_path":["learning_catalog","aids",3,"config","expression"],"value":{"op":"eval","args":["alert(1)"]},"expected_path":"config.expression"},
+    {"name":"missing-teaching-label","delete_path":["learning_catalog","aids",0,"evidence_kind"],"expected_path":"evidence_kind"},
+    {"name":"unfinished","patch_path":["content_status"],"value":"incomplete","expected_path":"content_status"}
+  ]
+}

@@ -15,6 +15,17 @@ from math_validation import validate_math
 
 
 class CollectionTests(unittest.TestCase):
+    def test_collection_ids_match_reader_directory_contract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for index, paper_id in enumerate(("fresh.paper", "a" * 160)):
+                result = collect(Path(directory) / str(index), {'papers': [{'id': paper_id, 'title': 'Fresh paper'}]}, False)
+                self.assertEqual(result['papers'][0]['id'], paper_id)
+            for index, paper_id in enumerate((".hidden", "_leading", "a" * 161, "../escape", 123)):
+                vault = Path(directory) / ('invalid' + str(index))
+                with self.assertRaisesRegex(ValueError, 'Unsafe paper ID'):
+                    collect(vault, {'papers': [{'id': paper_id, 'title': 'Fresh paper'}]}, False)
+                self.assertFalse((vault / 'library.json').exists())
+
     def test_doi_dedup_preserves_reading_assets_and_versions(self):
         with tempfile.TemporaryDirectory() as directory:
             vault = Path(directory)

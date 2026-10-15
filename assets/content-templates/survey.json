@@ -1,0 +1,41 @@
+{
+  "preset": "survey",
+  "overview": [
+    {
+      "id": "problem",
+      "title": "问题背景",
+      "task": "综述对象、整理动机与文献覆盖范围。"
+    },
+    {
+      "id": "method",
+      "title": "方法框架",
+      "task": "真实文献分类、比较与研究组织关系，用method_pipeline展示整体框架。"
+    },
+    {
+      "id": "innovation",
+      "title": "创新点",
+      "task": "本文新增的分类视角、跨方向联系或研究缺口。"
+    },
+    {
+      "id": "evaluation",
+      "title": "实验与效果",
+      "task": "主要共识、分歧及证据；条件不同的结果不拼成统一排名。"
+    },
+    {
+      "id": "cost",
+      "title": "开销与论文边界",
+      "task": "文献覆盖时间/范围及各路线已报告代价、复现条件和限制。"
+    }
+  ],
+  "explanation": [
+    {
+      "id": "source-section",
+      "title": "按原论文大章节展开",
+      "task": "保留原论文大章节及顺序，在对应位置补前提、中间推理和数学，随文插入并解释原图表。"
+    }
+  ],
+  "component_suggestions": [
+    "method_pipeline"
+  ],
+  "authoring_note": "日常只读 references/reader_workflow.md；本清单只定位待填内容，专题规则遇到对应问题再查。"
+}

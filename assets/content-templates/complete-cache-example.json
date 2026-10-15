@@ -1,0 +1,647 @@
+{
+  "schema_version": 3,
+  "content_contract_version": "3.1",
+  "content_version": "cache-teaching-1",
+  "content_status": "ready",
+  "id": "cache_teaching_example",
+  "title_en": "A Small LRU Cache Teaching Model",
+  "title_cn": "一个能逐步复算的缓存教学模型",
+  "authors": [
+    "教学样板"
+  ],
+  "year": 2026,
+  "venue": "自拟教学材料，不是研究论文",
+  "level": "beginner",
+  "content_review": {
+    "reviewer": "样板维护者：按确定的七次请求逐项复算",
+    "plain_language_scores": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "factual_gates": {
+      "source_accuracy": true,
+      "evidence_separation": true,
+      "claim_scope": true,
+      "prerequisites": true,
+      "formula_correctness": true,
+      "analogy_and_example": true
+    },
+    "note": "这是针对该确定教学样板的审阅记录；不是自动评分、STE认证或学习效果证据。容量3时顺序为A,B,C,A,D,A,B，命中2次。"
+  },
+  "learning_requirements": {
+    "required_formula_ids": [
+      "src-hit-ratio"
+    ]
+  },
+  "learning_catalog": {
+    "concepts": [
+      {
+        "id": "data",
+        "label": "数据",
+        "context_meaning": "本例要取用的一项内容，用A、B、C、D命名。",
+        "plain_definition": "把每项内容看成一本有名字的书。字母只是名字，不表示数值。",
+        "prerequisite_ids": []
+      },
+      {
+        "id": "read",
+        "label": "读取",
+        "context_meaning": "取出当前需要的那项内容。",
+        "plain_definition": "请求A，就是此刻要用A。是否已经放在缓存中，不影响这个请求叫什么。",
+        "prerequisite_ids": [
+          "data"
+        ]
+      },
+      {
+        "id": "capacity",
+        "label": "容量",
+        "context_meaning": "缓存最多能同时放几项数据。",
+        "plain_definition": "本例容量为3，就是最多有三个位置。第四项到来时可能要腾位置。",
+        "prerequisite_ids": [
+          "data"
+        ]
+      },
+      {
+        "id": "hit",
+        "label": "命中",
+        "context_meaning": "要读取的内容已经在缓存里。",
+        "plain_definition": "要用A时，A已经在桌上，这次就不用去书架取。",
+        "prerequisite_ids": [
+          "read"
+        ]
+      },
+      {
+        "id": "miss",
+        "label": "未命中",
+        "context_meaning": "要读取的内容不在缓存里，需要从外部取来。",
+        "plain_definition": "要用B时桌上没有B，需要去书架取。即使桌上还有空位，也算未命中。",
+        "prerequisite_ids": [
+          "hit"
+        ]
+      },
+      {
+        "id": "evict",
+        "label": "移出",
+        "context_meaning": "从缓存拿走一项，为新内容腾位置。",
+        "plain_definition": "把一本书从桌面放回书架。外部原件仍保留，移出不表示内容永远消失。",
+        "prerequisite_ids": [
+          "capacity"
+        ]
+      },
+      {
+        "id": "lru",
+        "label": "最近最少使用（LRU）",
+        "context_meaning": "位置满了时，移出最久没有被用过的那项。",
+        "plain_definition": "每用一次，就记下它刚用过。需要腾位置时，选最后一次使用时间最早的那项。",
+        "prerequisite_ids": [
+          "read",
+          "evict"
+        ]
+      },
+      {
+        "id": "ratio",
+        "label": "比例",
+        "context_meaning": "一类情况的次数，占总次数的多少。",
+        "plain_definition": "七次读取里有两次命中，就用2除以7。比例没有单位，可写成小数或百分比。",
+        "prerequisite_ids": [
+          "hit",
+          "read"
+        ]
+      }
+    ],
+    "aids": [
+      {
+        "id": "aid-words",
+        "type": "concept_cards",
+        "version": 1,
+        "title": "先认识这些词",
+        "evidence_kind": "teaching_example",
+        "config": {
+          "concept_ids": [
+            "data",
+            "read",
+            "capacity",
+            "hit",
+            "miss",
+            "evict",
+            "lru",
+            "ratio"
+          ]
+        },
+        "fallback_text": "数据是要取用的内容；读取是取出内容。容量是位置数。命中表示内容已在缓存，未命中表示需要从外部取。移出为新项腾位置。LRU选择最久没用的一项。比例用部分次数除以总次数。"
+      },
+      {
+        "id": "aid-lru",
+        "type": "lru_cache",
+        "version": 1,
+        "title": "动手读取七项内容",
+        "evidence_kind": "teaching_example",
+        "config": {
+          "sequence": [
+            "A",
+            "B",
+            "C",
+            "A",
+            "D",
+            "A",
+            "B"
+          ],
+          "capacity": 3,
+          "min_capacity": 1,
+          "max_capacity": 4
+        },
+        "fallback": {
+          "version": 1,
+          "blocks": [
+            {
+              "id": "fallback-lru-table",
+              "type": "table",
+              "headers": [
+                "读取",
+                "是否命中",
+                "操作后缓存（旧→新）",
+                "移出"
+              ],
+              "rows": [
+                [
+                  "A",
+                  "否",
+                  "A",
+                  "无"
+                ],
+                [
+                  "B",
+                  "否",
+                  "A B",
+                  "无"
+                ],
+                [
+                  "C",
+                  "否",
+                  "A B C",
+                  "无"
+                ],
+                [
+                  "A",
+                  "是",
+                  "B C A",
+                  "无"
+                ],
+                [
+                  "D",
+                  "否",
+                  "C A D",
+                  "B"
+                ],
+                [
+                  "A",
+                  "是",
+                  "C D A",
+                  "无"
+                ],
+                [
+                  "B",
+                  "否",
+                  "D A B",
+                  "C"
+                ]
+              ]
+            },
+            {
+              "id": "fallback-lru-result",
+              "type": "paragraph",
+              "text_zh": "容量为3时，七次读取命中两次，未命中五次。容量为1、2、3、4时，命中次数分别为0、1、2、3。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "aid-steps",
+        "type": "steps",
+        "version": 1,
+        "title": "为什么第5步移出B",
+        "evidence_kind": "teaching_example",
+        "config": {
+          "initial_step": 0,
+          "steps": [
+            {
+              "title": "读完C",
+              "text": "第3步后，顺序为A B C，A最久没有使用。"
+            },
+            {
+              "title": "再次读取A",
+              "text": "第4步命中A，并将它记为刚用过。顺序变为B C A。"
+            },
+            {
+              "title": "读取D",
+              "text": "第5步需要D，但三个位置已满。此刻B最久没用，因此移出B，留下C A D。"
+            }
+          ]
+        },
+        "fallback_text": "第3步是A B C；第4步读取A后是B C A；第5步读取D时移出B，得到C A D。读取命中的项也会更新使用时间。"
+      },
+      {
+        "id": "aid-ratio",
+        "type": "formula_explorer",
+        "version": 1,
+        "title": "把次数代入比例",
+        "evidence_kind": "teaching_example",
+        "config": {
+          "parameters": [
+            {
+              "id": "H",
+              "label": "命中次数",
+              "min": 0,
+              "max": 7,
+              "step": 1,
+              "value": 2,
+              "unit": "次"
+            }
+          ],
+          "expression": {
+            "op": "divide",
+            "args": [
+              {
+                "parameter": "H"
+              },
+              7
+            ]
+          },
+          "result_label": "七次读取中的命中比例",
+          "latex": "h=\\frac{H}{7}",
+          "symbols": [
+            {
+              "symbol": "H",
+              "meaning": "命中次数，可改变"
+            },
+            {
+              "symbol": "7",
+              "meaning": "本演示固定的总读取次数"
+            }
+          ]
+        },
+        "fallback_text": "总次数固定为7。命中0、2、7次时，比例分别为0、2/7约0.286、1。改动次数是在探索定义，不表示改动真实测量结果。"
+      },
+      {
+        "id": "aid-parameters",
+        "type": "parameter_explorer",
+        "version": 1,
+        "title": "总次数变化时比例如何变化",
+        "evidence_kind": "teaching_example",
+        "config": {
+          "parameters": [
+            {
+              "id": "H",
+              "label": "命中次数",
+              "min": 0,
+              "max": 5,
+              "step": 1,
+              "value": 2,
+              "unit": "次"
+            },
+            {
+              "id": "N",
+              "label": "总读取次数",
+              "min": 5,
+              "max": 10,
+              "step": 1,
+              "value": 7,
+              "unit": "次"
+            }
+          ],
+          "expression": {
+            "op": "divide",
+            "args": [
+              {
+                "parameter": "H"
+              },
+              {
+                "parameter": "N"
+              }
+            ]
+          },
+          "result_label": "命中比例",
+          "latex": "h=\\frac{H}{N}"
+        },
+        "fallback_text": "命中次数固定为2时，总次数为5、7、10对应比例0.4、约0.286、0.2。总次数固定时，命中次数越大，比例越大。这里独立改变计数，只展示比例关系。"
+      },
+      {
+        "id": "aid-predict",
+        "type": "prediction",
+        "version": 1,
+        "title": "先预测第5步",
+        "evidence_kind": "teaching_example",
+        "config": {
+          "question": "第4步刚用过A。第5步读取D时，缓存B C A中会移出哪项？",
+          "choices": [
+            {
+              "id": "a",
+              "text": "A",
+              "feedback": "第4步刚用过A，它的使用时间已更新。A此时不是最久没用的项。"
+            },
+            {
+              "id": "b",
+              "text": "B",
+              "feedback": "正确。B从第2步起就没有再用过；C在第3步用过，A在第4步用过。"
+            },
+            {
+              "id": "c",
+              "text": "C",
+              "feedback": "C在第3步用过，比第2步用过的B更新，因此本步先移出B。"
+            }
+          ],
+          "correct_choice_id": "b",
+          "explanation": "LRU比较最后一次使用时间，不比较字母顺序或最初放入时间。"
+        },
+        "fallback_text": "问题：第5步移出谁？答案：B。第4步使用A后顺序为B C A，B最久没有使用。"
+      }
+    ]
+  },
+  "overview": {
+    "sections": [
+      {
+        "id": "overview-task",
+        "title_cn": "先看问题与规则",
+        "blocks": [
+          {
+            "id": "ov-rule",
+            "type": "paragraph",
+            "evidence_kind": "ai_explanation",
+            "text_zh": "缓存把一部分数据留在较近的位置。再次需要它们时，可以直接取用。本教学模型只有三个位置；满了就移出最久没有使用的一项。",
+            "source_refs": [
+              {
+                "block_id": "src-rule",
+                "label": "自拟英文教学原文"
+              }
+            ],
+            "learning": {
+              "id": "learn-rule",
+              "plain_summary": "位置有限时，需要决定保留哪些内容。每次使用都会改变“多久没用过”的顺序。",
+              "concept_ids": [
+                "data",
+                "read",
+                "capacity",
+                "hit",
+                "miss",
+                "evict",
+                "lru"
+              ],
+              "aid_ids": [
+                "aid-words",
+                "aid-lru"
+              ],
+              "analogy": {
+                "text": "学习时把常用书放在桌上，其他书放在旁边书架。桌上有书就直接取；桌面满了，把最久没用的书放回去。",
+                "mappings": [
+                  {
+                    "everyday": "桌面",
+                    "paper": "缓存"
+                  },
+                  {
+                    "everyday": "书架",
+                    "paper": "外部存放处"
+                  },
+                  {
+                    "everyday": "拿一本书来用",
+                    "paper": "读取一项数据"
+                  }
+                ],
+                "boundary": "只类比位置有限和近期使用。真实系统的数据大小、并发和速度需要另外测量，不能由桌面类比推出。"
+              }
+            }
+          },
+          {
+            "id": "ov-outcome",
+            "type": "paragraph",
+            "evidence_kind": "ai_explanation",
+            "text_zh": "依次读取A、B、C、A、D、A、B，命中两次。这个结果说明规则怎样运行；它没有测量真实程序的提速。",
+            "source_refs": [
+              {
+                "block_id": "src-count",
+                "label": "教学计数"
+              }
+            ],
+            "learning": {
+              "id": "learn-outcome",
+              "plain_summary": "命中比例只说明多少次请求直接找到了内容。运行时间还会受每次访问的成本等条件影响。",
+              "concept_ids": [
+                "ratio"
+              ],
+              "aid_ids": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "explanation": {
+    "sections": [
+      {
+        "id": "ex-state",
+        "title_cn": "跟着状态变化看机制",
+        "blocks": [
+          {
+            "id": "ex-walk",
+            "type": "paragraph",
+            "evidence_kind": "ai_explanation",
+            "text_zh": "下表和演示都从空缓存开始。缓存从左到右排列最久没用到刚用过的项。第4步命中A后，A移到右端；第5步因此移出B。",
+            "source_refs": [
+              {
+                "block_id": "src-rule",
+                "label": "LRU规则"
+              }
+            ],
+            "learning": {
+              "id": "learn-walk",
+              "plain_summary": "命中也会更新使用时间。这一步决定下次满了时移出谁。",
+              "concept_ids": [
+                "hit",
+                "lru"
+              ],
+              "aid_ids": [
+                "aid-steps",
+                "aid-predict"
+              ],
+              "example": {
+                "evidence_kind": "teaching_example",
+                "input": "三个位置，当前顺序A B C；接着读A，再读D。",
+                "steps": [
+                  {
+                    "text": "读A：已经有A，记为刚用过，得到B C A。"
+                  },
+                  {
+                    "text": "读D：没有D且已满，移出最久没用的B，放入D。"
+                  }
+                ],
+                "result": "最终顺序C A D，本步移出B。",
+                "interpretation": "一次命中仍会改变将来腾位置时的选择。"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "ex-formula",
+        "title_cn": "命中比例到底在算什么",
+        "blocks": [
+          {
+            "id": "ex-ratio",
+            "type": "formula",
+            "evidence_kind": "ai_explanation",
+            "latex": "h=\\frac{H}{N},\\qquad N>0,\\quad 0\\leq H\\leq N",
+            "text_zh": "把命中次数除以总读取次数，得到命中所占比例。",
+            "source_refs": [
+              {
+                "block_id": "src-hit-ratio",
+                "label": "教学定义"
+              }
+            ],
+            "learning": {
+              "id": "learn-ratio",
+              "plain_summary": "先数总共读取几次，再数其中几次命中。将两个计数相除，就得到命中所占的份额。",
+              "concept_ids": [
+                "read",
+                "hit",
+                "ratio"
+              ],
+              "aid_ids": [
+                "aid-ratio",
+                "aid-parameters"
+              ],
+              "formula_explanations": [
+                {
+                  "id": "explain-hit-ratio",
+                  "formula_ref": "src-hit-ratio",
+                  "explanation_kind": "calculation",
+                  "purpose": "把读取序列中的命中次数转换成比例，便于说明这组请求中多少次直接找到了内容。输入是两项计数，输出是没有单位的比例。",
+                  "symbols": [
+                    {
+                      "symbol": "N",
+                      "meaning": "总读取次数，本例为7。",
+                      "unit": "次",
+                      "range": "正整数"
+                    },
+                    {
+                      "symbol": "H",
+                      "meaning": "命中次数，本例为2；大小写区分不同对象。",
+                      "unit": "次",
+                      "range": "0到N之间的整数"
+                    },
+                    {
+                      "symbol": "h",
+                      "meaning": "命中占总读取的比例。",
+                      "unit": "无",
+                      "range": "0到1"
+                    }
+                  ],
+                  "operations": [
+                    {
+                      "operator": "分数线",
+                      "meaning": "把命中次数按总次数分摊；2除以7表示七次中有两次命中。"
+                    },
+                    {
+                      "operator": "大于号与上下界",
+                      "meaning": "N必须大于0；命中次数不能小于0，也不能超过总次数。"
+                    }
+                  ],
+                  "steps": [
+                    {
+                      "text": "把七次请求逐项数完，得到总次数N为7。",
+                      "latex": "N=7"
+                    },
+                    {
+                      "text": "第4步和第6步命中，共两次。",
+                      "latex": "H=2"
+                    },
+                    {
+                      "text": "把两个计数代入，保留精确分数，再按需要取近似小数。",
+                      "latex": "h=\\frac{2}{7}\\approx0.286"
+                    }
+                  ],
+                  "example": {
+                    "evidence_kind": "teaching_example",
+                    "input": "空缓存，容量3；读取A、B、C、A、D、A、B。",
+                    "steps": [
+                      {
+                        "text": "第1、2、3、5、7步未命中，第4、6步命中。"
+                      },
+                      {
+                        "text": "总共七次，命中两次。",
+                        "latex": "N=7,\\quad H=2"
+                      },
+                      {
+                        "text": "相除后乘100%，可写成百分比。",
+                        "latex": "\\frac{2}{7}\\times100\\%\\approx28.6\\%"
+                      }
+                    ],
+                    "result": "精确比例2/7，约0.286或28.6%。",
+                    "interpretation": "这组请求里约28.6%直接在缓存中找到了内容；不等于程序提速28.6%。"
+                  },
+                  "variation": "总次数固定时，命中次数越大，比例越大。命中次数固定时，总次数越大，比例越小。",
+                  "boundary": "N为0时不能计算该比例。必须满足0≤H≤N。同一序列改变容量会改变H；单独改计数的演示只检验定义。",
+                  "paper_connection": "此式总结前一节演示的计数。真实系统是否更快还需要访问成本与运行时间测量，本教学模型没有提供这种证据。",
+                  "source_refs": [
+                    {
+                      "block_id": "src-hit-ratio",
+                      "label": "自拟教学原式"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "source-teaching-model",
+      "title_cn": "自拟英文教学原文与忠实翻译",
+      "title_en": "Synthetic teaching source",
+      "blocks": [
+        {
+          "id": "src-disclaimer",
+          "type": "paragraph",
+          "evidence_kind": "teaching_example",
+          "text_en": "This is a synthetic teaching model, not a research paper or performance experiment.",
+          "text_zh": "这是自拟教学模型，不是研究论文，也不是性能实验。",
+          "source_refs": []
+        },
+        {
+          "id": "src-rule",
+          "type": "paragraph",
+          "evidence_kind": "teaching_example",
+          "text_en": "A cache holds up to three items. It starts empty. On every request, the requested item becomes the most recently used item. If a new item arrives when the cache is full, remove the least recently used item. The external copy remains available.",
+          "text_zh": "缓存最多保存三项内容，初始为空。每次请求后，该项内容都成为最近使用的一项。若新内容到来时缓存已满，就移出最近最少使用的一项。外部副本仍可取用。",
+          "source_refs": []
+        },
+        {
+          "id": "src-count",
+          "type": "paragraph",
+          "evidence_kind": "teaching_example",
+          "text_en": "For the request sequence A, B, C, A, D, A, B, a capacity of three gives two hits and five misses. At request five, B is removed because request four refreshed A. These counts do not measure program speed.",
+          "text_zh": "请求顺序为A、B、C、A、D、A、B时，容量为三的缓存命中两次、未命中五次。第5次请求移出B，因为第4次请求更新了A的使用时间。这些计数不测量程序速度。",
+          "source_refs": []
+        },
+        {
+          "id": "src-hit-ratio",
+          "type": "formula",
+          "evidence_kind": "teaching_example",
+          "key_formula": true,
+          "latex": "h=\\frac{H}{N},\\qquad N>0,\\quad 0\\leq H\\leq N",
+          "text_en": "Here N is the number of requests, H is the number of hits, and h is the hit ratio. With H=2 and N=7, the exact ratio is 2/7.",
+          "text_zh": "其中N为请求总次数，H为命中次数，h为命中比例。H为2且N为7时，精确比例为2/7。",
+          "source_refs": []
+        }
+      ]
+    }
+  ]
+}

@@ -22,10 +22,12 @@ import subprocess
 import sys
 import webbrowser
 import time
+import uuid
 from pathlib import Path
 from urllib.request import Request, build_opener, ProxyHandler
 
 from deploy_reader import load_paper_data
+from runtime_lock import RuntimeLock
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -34,6 +36,20 @@ if hasattr(sys.stdout, "reconfigure"):
 SKILL_SCRIPTS = Path(__file__).resolve().parent
 DEFAULT_PORT = 8790
 LOCAL_HTTP = build_opener(ProxyHandler({}))
+
+
+def resolve_vault_dir(target, explicit_vault=None):
+    """Infer a vault only from an existing HTML in vault/papers/paper_id."""
+    vault = Path(explicit_vault).resolve() if explicit_vault else Path.cwd() / "PaperVault"
+    html = Path(target)
+    if html.is_file() and html.suffix.lower() == ".html":
+        paper_dir = html.resolve().parent
+        if paper_dir.parent.name == "papers":
+            inferred = paper_dir.parent.parent
+            if explicit_vault and vault != inferred:
+                raise ValueError("--vault 与 HTML 所在文献库冲突: " + str(inferred))
+            return inferred
+    return vault
 
 
 def resolve_paper_dir(target: str, vault_dir: Path) -> Path:
@@ -98,6 +114,8 @@ def live_v3_state(vault_dir):
             return None
         with LOCAL_HTTP.open(state["url"] + "/api/ping", timeout=1) as response:
             ping = json.load(response)
+        if state.get("service_instance_id") and ping.get("service_instance_id") != state["service_instance_id"]:
+            return None
         return state if ping.get("api_version") == 3 else None
     except (ValueError, OSError, KeyError):
         return None
@@ -117,9 +135,25 @@ def stop_v3(vault_dir):
 
 
 def open_v3(paper_dir, vault_dir, args):
-    from serve_reader_v3 import hidden_flags
-    write_bat(paper_dir, vault_dir, paper_dir.name)
+    # Both detached launchers and direct service launches have OS-owned locks.
+    # The launcher owns startup only; the service owns its entire lifetime.
+    with RuntimeLock(vault_dir / ".reader" / "start.lock", timeout=20) as launch_lock:
+        return _open_v3_locked(paper_dir, vault_dir, args, launch_lock)
+
+
+def _open_v3_locked(paper_dir, vault_dir, args, launch_lock):
+    from serve_reader_v3 import hidden_flags, require_pdf_runtime
     state = live_v3_state(vault_dir)
+    if state and any(getattr(args, key, None) not in (None, "") for key in ("model", "effort")):
+        print("已有阅读器 v3 服务正在运行；本次指定了 --model/--effort。请先执行 --stop，再按参数重新启动。")
+        return 2
+    if not state:
+        try:
+            require_pdf_runtime()
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+    write_bat(paper_dir, vault_dir, paper_dir.name)
     if not state:
         state_dir = vault_dir / ".reader"
         state_dir.mkdir(parents=True, exist_ok=True)
@@ -132,6 +166,7 @@ def open_v3(paper_dir, vault_dir, args):
         if args.foreground:
             if not args.no_open:
                 cmd.remove("--no-open")
+            launch_lock.close()
             return subprocess.call(cmd)
         # OS launcher -> detached service supervisor -> bridge -> app-server.
         # No pipe or tool session keeps any process alive after this returns.
@@ -150,6 +185,19 @@ def open_v3(paper_dir, vault_dir, args):
         if not state:
             print("服务尚未就绪，查看:", state_dir / "service.log")
             return 1
+    if args.bridge != "none":
+        # Reuse is also a repair operation, including a live --bridge none
+        # service. This ordinary ensure intentionally preserves explicit pause.
+        payload = {"paper_id": paper_dir.name, "request_id": "launcher_" + uuid.uuid4().hex}
+        request = Request(state["url"] + "/api/assistant/ensure", data=json.dumps(payload).encode("utf-8"),
+                          method="POST", headers={"Content-Type": "application/json", "X-Reader-Token": state["token"]})
+        try:
+            with LOCAL_HTTP.open(request, timeout=5) as response:
+                assistant = json.load(response).get("assistant", {})
+            if assistant.get("state") == "paused":
+                print("本库答疑已暂停；可在页面点击开启答疑。")
+        except OSError as exc:
+            print("阅读器已在线，答疑连接未完成:", str(exc))
     url = state["url"] + "/papers/" + paper_dir.name + "/reader.html"
     if not args.no_open:
         webbrowser.open(url)
@@ -185,8 +233,8 @@ def main():
     parser.add_argument("--no-open", action="store_true", help="启动但不打开浏览器")
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--bridge", choices=("codex", "mock", "none"), default="codex")
-    parser.add_argument("--model", help="可选宿主模型覆盖；默认继承宿主配置")
-    parser.add_argument("--effort", help="可选推理强度覆盖；默认继承宿主配置")
+    parser.add_argument("--model", help="可选宿主模型覆盖；未提供时继承宿主/会话设置")
+    parser.add_argument("--effort", help="可选推理强度覆盖；未提供时继承宿主/会话设置")
     parser.add_argument("--codex-bin", help="可选codex可执行文件路径")
     args = parser.parse_args()
 
@@ -195,6 +243,10 @@ def main():
         return sys.exit(stop_v3(vault_dir))
     if not args.target:
         parser.error("需要target（或使用--stop）")
+    try:
+        vault_dir = resolve_vault_dir(args.target, args.vault)
+    except ValueError as exc:
+        parser.error(str(exc))
     paper_dir = resolve_paper_dir(args.target, vault_dir)
     if paper_dir is None:
         sys.exit(1)

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rich-document.schema.json",
+  "title": "Shared note / answer / learning fallback document",
+  "$ref": "content-types.schema.json#/$defs/document"
+}

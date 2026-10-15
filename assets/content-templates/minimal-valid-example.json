@@ -1,0 +1,117 @@
+{
+  "schema_version": 3,
+  "content_contract_version": "3.1",
+  "content_version": "synthetic-minimal-1",
+  "content_status": "ready",
+  "id": "minimal_teaching_example",
+  "title_en": "A teaching definition",
+  "title_cn": "一个最小教学定义",
+  "level": "beginner",
+  "content_review": {
+    "reviewer": "样板维护者：对照此自拟定义",
+    "plain_language_scores": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "factual_gates": {
+      "source_accuracy": true,
+      "evidence_separation": true,
+      "claim_scope": true,
+      "prerequisites": true,
+      "formula_correctness": true,
+      "analogy_and_example": true
+    },
+    "note": "只针对本例审阅，不包含学习增益或自动认证声明。"
+  },
+  "learning_catalog": {
+    "concepts": [
+      {
+        "id": "capacity",
+        "label": "容量",
+        "context_meaning": "最多同时放多少项。",
+        "plain_definition": "有三个位置，就最多同时放三项。",
+        "prerequisite_ids": []
+      }
+    ],
+    "aids": []
+  },
+  "learning_requirements": {
+    "required_formula_ids": []
+  },
+  "overview": {
+    "sections": [
+      {
+        "id": "overview",
+        "title_cn": "认识对象",
+        "blocks": [
+          {
+            "id": "ov-capacity",
+            "type": "paragraph",
+            "evidence_kind": "ai_explanation",
+            "text_zh": "本教学盒子有三个位置，最多放三项。",
+            "source_refs": [
+              {
+                "block_id": "src-capacity",
+                "label": "自拟定义"
+              }
+            ],
+            "learning": {
+              "id": "learn-capacity",
+              "plain_summary": "容量数的是最多放多少项。",
+              "concept_ids": [
+                "capacity"
+              ],
+              "aid_ids": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "explanation": {
+    "sections": [
+      {
+        "id": "explanation",
+        "title_cn": "具体看容量",
+        "blocks": [
+          {
+            "id": "ex-capacity",
+            "type": "paragraph",
+            "evidence_kind": "ai_explanation",
+            "text_zh": "放入A、B、C后，三个位置都用了。再放D时，需要先腾一个位置。",
+            "source_refs": [
+              {
+                "block_id": "src-capacity",
+                "label": "自拟定义"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "translation",
+      "title_cn": "自拟原文与译文",
+      "blocks": [
+        {
+          "id": "src-capacity",
+          "type": "paragraph",
+          "evidence_kind": "teaching_example",
+          "text_en": "This teaching box has three slots. It can hold at most three items at once.",
+          "text_zh": "这个教学盒子有三个位置，最多能同时放三项。",
+          "source_refs": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,2 +1,2 @@
-# PDF extraction and auditing only. Core service/reporting uses Python stdlib.
+# Source extraction/evidence for reading and QA. Install into the Python used to start the reader.
 PyMuPDF
