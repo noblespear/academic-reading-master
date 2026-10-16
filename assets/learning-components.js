@@ -75,7 +75,7 @@
     root.dataset.aidType=aid.type; root.dataset.aidId=aid.id || '';
     if(aid.title)root.append(el('h4','learning-component-title',aid.title));
     if(aid.evidence_kind==='teaching_example')root.append(el('span','teaching-label','教学示例'));
-    if(aid.evidence_kind==='paper')root.append(el('span','visual-source-label',aid.type==='method_pipeline'?'论文方法 · 按原文整理':'论文结果 · 原文数值'));
+    if(aid.evidence_kind==='paper')root.append(el('span','visual-source-label',aid.type==='method_pipeline'?'研究框架 · 按原文整理':'论文结果 · 原文数值'));
     const key=host.context.scope + '/' + (aid.id || aid.type), stored=host.studyState[key] || {}, config=aid.config || {};
     function save(value){host.studyState[key]=Object.assign({},host.studyState[key],value);host.onStudyChange(key,host.studyState[key]);host.onLayout();}
     const tools={el,button,text:host.text,root,config,stored,save,host};
@@ -299,10 +299,10 @@
     const figure=el('figure','method-pipeline-figure'),drawing=el('div','method-pipeline-drawing'),legend=el('figcaption','method-pipeline-legend');
     Object.entries(kinds).forEach(([kind,label])=>legend.append(el('span','method-relation-key method-relation-'+kind,label)));
     figure.append(drawing,legend);
-    const controls=el('div','method-pipeline-controls'),previous=button('上一阶段','visual-stage-button',()=>move(-1)),next=button('下一阶段','visual-stage-button',()=>move(1)),reset=button('返回全貌','visual-stage-button',()=>update(null,true));
+    const controls=el('div','method-pipeline-controls'),previous=button('上一节点','visual-stage-button',()=>move(-1)),next=button('下一节点','visual-stage-button',()=>move(1)),reset=button('返回全貌','visual-stage-button',()=>update(null,true));
     const status=el('output','method-pipeline-status');status.setAttribute('aria-live','polite');controls.append(previous,next,reset,status);
     const description=el('section','method-pipeline-description');description.setAttribute('aria-label','所选节点或关系说明');description.setAttribute('aria-live','polite');description.tabIndex=0;
-    const relations=el('details','method-pipeline-relations'),relationList=el('ol'),relationButtons=new Map();relations.append(el('summary',null,'选择关系，查看流转与理由'),relationList);
+    const relations=el('details','method-pipeline-relations'),relationList=el('ol'),relationButtons=new Map();relations.append(el('summary',null,'选择关系，查看关联内容与理由'),relationList);
     edges.forEach((edge,id)=>{
       const li=el('li');li.dataset.edgeId=id;
       const choice=button(name(edge.from)+' → '+name(edge.to)+' · '+kinds[edge.kind]+'：'+edge.label,'method-pipeline-edge-choice',()=>update(null,true,id));
@@ -404,8 +404,8 @@
         positions.set(id,{column,row,authorColumn:node.column,authorRow:node.row});
       });
       positions.forEach(p=>{p.x=margin+(p.column+.5)*cellWidth;p.y=top+p.row*(nodeHeight+gap)+nodeHeight/2;p.left=p.x-nodeWidth/2;p.right=p.x+nodeWidth/2;p.top=p.y-nodeHeight/2;p.bottom=p.y+nodeHeight/2;});
-      const svg=svgElement('svg',{viewBox:'0 0 '+width+' '+height,width,height,role:'img',class:'method-pipeline-svg','aria-label':'完整方法框架的有向关系'}),nodeLayer=el('div','method-pipeline-node-layer');nodeLayer.setAttribute('role','group');nodeLayer.setAttribute('aria-label','点击方法阶段');
-      svg.append(svgElement('title',{},'完整方法框架'),svgElement('desc',{},config.summary+' 连线方向及类型由论文方法决定。'));
+      const svg=svgElement('svg',{viewBox:'0 0 '+width+' '+height,width,height,role:'img',class:'method-pipeline-svg','aria-label':'完整研究框架的有向关系'}),nodeLayer=el('div','method-pipeline-node-layer');nodeLayer.setAttribute('role','group');nodeLayer.setAttribute('aria-label','点击研究节点');
+      svg.append(svgElement('title',{},'完整研究框架'),svgElement('desc',{},config.summary+' 连线方向及类型依照论文实际的研究关系。'));
       const defs=svgElement('defs'),marker=svgElement('marker',{id:markerId,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:6,markerHeight:6,orient:'auto'});marker.append(svgElement('path',{d:'M 0 1 L 9 5 L 0 9 Z',fill:'context-stroke'}));defs.append(marker);svg.append(defs);
       const edgePorts=new Map(),portGroups=new Map(),portSlots=new Map();
       function addPortGroup(nodeId,side,id,role,anchor,distance){const key=nodeId+'|'+side;if(!portGroups.has(key))portGroups.set(key,[]);portGroups.get(key).push({id,role,anchor,distance,order:portGroups.get(key).length});}
@@ -565,7 +565,7 @@
         });nodeLayer.append(group);nodeElements.set(id,group);
       });
       const canvas=el('div','method-pipeline-canvas');canvas.style.width='100%';canvas.style.height=height+'px';canvas.dataset.layoutMode=layoutMode;canvas.append(svg,nodeLayer);drawing.replaceChildren(canvas);highlight();root.dataset.layoutColumns=String(authorColumns);root.dataset.layoutRows=String(authorRows);root.dataset.visualColumns=String(columns);root.dataset.visualRows=String(rowCount);root.dataset.layoutMode=layoutMode;root.dataset.mapWidth=String(width);root.dataset.scrollable='false';
-      readingNote.textContent='点击节点看概要、输入和输出；点击连线看流转与理由，也可展开关系列表选择。上一/下一按阅读顺序浏览。'+(turned?'窄屏按原网格方向纵向重排，分支、汇合和反馈仍按登记关系连线。':'');
+      readingNote.textContent='点击节点看概要、依据或输入、结果或输出；点击连线看关联内容与理由，也可展开关系列表选择。上一/下一按阅读顺序浏览。'+(turned?'窄屏按原网格方向纵向重排，分支、汇合和反馈仍按登记关系连线。':'');
     }
     function highlight(){
       const related=new Set();edges.forEach((edge,id)=>{const active=selectedEdge!==null?id===selectedEdge:selected!==null&&(edge.from===selected||edge.to===selected);edgeElements.get(id)?.classList.toggle('is-related',active);edgeElements.get(id)?.classList.toggle('is-selected',id===selectedEdge);if(active){related.add(edge.from);related.add(edge.to);}});
@@ -578,10 +578,10 @@
       if(selected===null&&selectedEdge===null){text(description,config.summary,'config.summary','method-pipeline-summary');status.textContent='完整框架';}
       else if(selectedEdge!==null){
         const edge=edges.get(selectedEdge),index=Array.from(edges.keys()).indexOf(selectedEdge);description.append(el('h5',null,name(edge.from)+' → '+name(edge.to)+' · '+kinds[edge.kind]));
-        detail('label','关系',edge.label,'config.edges.'+index+'.label');detail('flow','流转内容',edge.flow,'config.edges.'+index+'.flow');detail('cause','关系为何成立',edge.cause,'config.edges.'+index+'.cause');status.textContent='当前关系：'+name(edge.from)+' → '+name(edge.to);
+        detail('label','关系',edge.label,'config.edges.'+index+'.label');detail('flow','关联内容',edge.flow,'config.edges.'+index+'.flow');detail('cause','关系为何成立',edge.cause,'config.edges.'+index+'.cause');status.textContent='当前关系：'+name(edge.from)+' → '+name(edge.to);
       }else{
         const node=nodes.get(selected),index=Array.from(nodes.keys()).indexOf(selected);description.append(el('h5',null,node.label));
-        [['summary','概要'],['inputs','输入'],['outputs','输出'],['role','职责'],['why_needed','为什么需要'],['handoff','如何衔接']].forEach(([field,label])=>{if(node[field]!==undefined)detail(field,label,node[field],'config.nodes.'+index+'.'+field);});
+        [['summary','概要'],['inputs','依据 / 输入'],['outputs','结果 / 输出'],['role','作用'],['why_needed','为什么需要'],['handoff','如何衔接']].forEach(([field,label])=>{if(node[field]!==undefined)detail(field,label,node[field],'config.nodes.'+index+'.'+field);});
         const related=el('ul','method-pipeline-related');edges.forEach((edge,id)=>{if(edge.from===selected||edge.to===selected){const li=el('li');text(li,name(edge.from)+' → '+name(edge.to)+' · '+kinds[edge.kind]+'：'+edge.label,'config.edges.'+Array.from(edges.keys()).indexOf(id)+'.label');related.append(li);}});if(related.childElementCount)description.append(related);
         status.textContent='当前：'+node.label;
       }

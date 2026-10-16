@@ -1,0 +1,41 @@
+{
+  "preset": "empirical",
+  "overview": [
+    {
+      "id": "problem",
+      "title": "问题背景",
+      "task": "研究问题、对象、情境与已有认识中的不足。"
+    },
+    {
+      "id": "method",
+      "title": "研究框架",
+      "task": "研究设计、样本或材料来源、分析路径及其联系，用method_pipeline展示框架。"
+    },
+    {
+      "id": "innovation",
+      "title": "主要贡献",
+      "task": "新增的观察、材料、经验发现或解释，以及与既有研究的关系。"
+    },
+    {
+      "id": "evaluation",
+      "title": "论证与发现",
+      "task": "数据、观察或访谈怎样经过分析支持发现；按实际研究说明统计推断、质性解释或混合依据。"
+    },
+    {
+      "id": "cost",
+      "title": "适用范围与局限",
+      "task": "样本与材料覆盖、研究情境、推断或解释范围、研究者位置及其他可能解释；资源仅在相关时展开。"
+    }
+  ],
+  "explanation": [
+    {
+      "id": "source-section",
+      "title": "按原论文大章节展开",
+      "task": "保留原论文大章节及顺序，在对应位置补概念、材料语境、前提与中间推理；涉及数学时展开原式，按需插入并解释原图表。"
+    }
+  ],
+  "component_suggestions": [
+    "method_pipeline"
+  ],
+  "authoring_note": "日常只读 references/reader_workflow.md；本清单只定位待填内容，专题规则遇到对应问题再查。"
+}

@@ -197,7 +197,7 @@ class OverviewFrameworkTests(unittest.TestCase):
         self.assert_error(data, REQUIREMENT_PATH + ".block_id")
 
     def test_all_presets_register_an_empty_incomplete_interactive_pipeline_and_review_tasks(self):
-        self.assertEqual(set(PRESETS), {"method", "theory", "survey", "system"})
+        self.assertEqual(set(PRESETS), {"method", "theory", "survey", "system", "empirical", "argument"})
         for preset in PRESETS:
             with self.subTest(preset=preset):
                 data, todo = build_scaffold("framework-test", preset)

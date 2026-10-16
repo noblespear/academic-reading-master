@@ -6,11 +6,11 @@
 
 顶层含id、content_version、title_en/title_cn、authors、year、venue、level。overview.sections为概览，explanation.sections为独立详解，顶层sections为全文双语翻译。section含稳定id、title_cn、page与blocks；block ID全篇唯一，更新时稳定。
 
-完整论文概览保留“问题背景、方法框架、创新点、实验与效果、开销与论文边界”五个独立顶层section，按此顺序填写现有脚手架。最小教学/字段示例用于验证局部合同，不能照搬其章节数作为整篇论文架构；结构校验通过仍需审阅这五节是否齐备。
+通用版完整论文概览保留“问题背景、研究框架、主要贡献、论证与发现、适用范围与局限”五个独立顶层section，按此顺序填写现有脚手架。实验与资源分析按论文内容选用；原有section/block ID保持稳定，旧工科版标题仍可读取。最小教学/字段示例用于验证局部合同，不能照搬其章节数作为整篇论文架构；结构校验通过仍需审阅这五节是否齐备。
 
-3.2完整论文登记overview_framework后，正式校验要求恰好五个概览section，且登记的方法框架位于第二节；隔离草稿允许未完成。旧3.1/无标记及未登记完整框架的局部字段示例不加此门槛。五节标题、内容职责和其余顺序仍按正文写作与独立审阅核对。
+3.2完整论文登记overview_framework后，正式校验要求恰好五个概览section，且登记的研究框架位于第二节；隔离草稿允许未完成。旧3.1/无标记及未登记完整框架的局部字段示例不加此门槛。五节标题、内容职责和其余顺序仍按正文写作与独立审阅核对。
 
-实际正文块及details/quote中的子块保留type和实际内容，ID在全篇统一唯一，每个正文块填写有效evidence_kind。来源粒度见[主规则](../SKILL.md#工作范围主规则)：section.source_refs登记章级范围，普通段落可省略page/source_refs；图、式、关键实验可用块级定位补充。组件fallback和独立富文档使用各自局部ID范围。新正文填evidence_kind：paper、general_background、ai_explanation或teaching_example；翻译用translation。实际原式、实验数据与教学设定区分。
+实际正文块及details/quote中的子块保留type和实际内容，ID在全篇统一唯一，每个正文块填写有效evidence_kind。来源粒度见[主规则](../SKILL.md#工作范围主规则)：section.source_refs登记章级范围，普通段落可省略page/source_refs；关键引文、图表、公式与研究依据可用块级定位补充。组件fallback和独立富文档使用各自局部ID范围。新正文填evidence_kind：paper、general_background、ai_explanation或teaching_example；翻译用translation。原文材料、作者论断、AI解释与教学设定区分。
 
 | 类型 | 主要内容 |
 |---|---|
@@ -34,13 +34,13 @@ content_status:"ready"表示已审阅的正文可部署。新稿translation:{sta
 
 隔离preview可显示未完成草稿，尚未编写的视图使用空sections数组；已有内容仍检查结构、引用、资源和安全，只跳过内容完成与未发生的审阅门槛，不修改正式数据或用户历史。preview也不能把空译文标成translation.status:"ready"。
 
-## 方法框架与共享组件
+## 研究框架与共享组件
 
-新稿learning_requirements.overview_framework登记kind:"interactive_pipeline"、section_id与block_id，指向概览方法框架顶层placement:"body"的method_pipeline。完整功能链可见，内部小步骤不全拆到总图。
+新稿learning_requirements.overview_framework登记kind:"interactive_pipeline"、section_id与block_id，指向概览研究框架顶层placement:"body"的method_pipeline。完整研究路径或论证、组织关系可见，细节留正文；沿用这些内部字段与类型以保持数据兼容。
 
 method_pipeline现有version1合同保留：config含summary、nodes、edges和可选reading_order。节点id/label/summary/inputs/outputs/column/row，边id/from/to/kind/label/flow/cause。role/why_needed/handoff可选。骨架用prepare_method_pipeline自动补grid，模型不手写坐标；旧稿完整显式位置保留。
 
-图上短标签，点击节点或边更新固定说明区域。静态回退可读，不能代替新概览登记的交互。类型详细字段见[组件合同](learning_support_guide.md)。理论与综述用真实论证/组织关系，不虚构算法。
+图上短标签，点击节点或边更新固定说明区域。静态回退可读，不能代替新概览登记的交互。类型详细字段见[组件合同](learning_support_guide.md)。节点可表示概念、论据或研究环节，inputs/outputs可表述前提与形成的认识，flow/cause说明实际关联及理由。理论、解释性研究与综述用真实论证或组织关系，不虚构算法、时间顺序或因果。
 
 富文档、正文组件fallback及历史note_content/answer_content继续使用{version:1,blocks:[...]}。支持安全段落、标题、列表、图、公式、表格、代码、算法、quote/details和成熟learning_aid。新批注模型仅返回answer与sources，历史富文档仍读取；不再要求模型生成嵌套JSON字符串。
 

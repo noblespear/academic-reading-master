@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from content_contract import validate_learning_content
 from init_reading_content import build_scaffold, PRESETS
 
-TITLES = ['问题背景', '方法框架', '创新点', '实验与效果', '开销与论文边界']
+TITLES = ['问题背景', '研究框架', '主要贡献', '论证与发现', '适用范围与局限']
 
 def full_reader():
     root = ROOT / 'assets/content-templates'
@@ -52,12 +52,21 @@ class OverviewStructureTests(unittest.TestCase):
             data = json.loads((ROOT / 'assets/content-templates' / filename).read_text(encoding='utf-8'))
             self.assertEqual(validate_learning_content(data)[0], [])
 
+    def test_existing_engineering_titles_remain_valid_without_migration(self):
+        data = full_reader()
+        old_titles = ['问题背景', '方法框架', '创新点', '实验与效果', '开销与论文边界']
+        for section, title in zip(data['overview']['sections'], old_titles):
+            section['title_cn'] = title
+        before = copy.deepcopy(data)
+        self.assertEqual(validate_learning_content(data)[0], [])
+        self.assertEqual(data, before)
+
     def test_method_section_is_second_in_a_completed_five_section_overview(self):
         data = full_reader()
         sections = data['overview']['sections']
         sections[1], sections[2] = sections[2], sections[1]
         errors, _ = validate_learning_content(data)
-        self.assertTrue(any('方法框架必须位于' in error for error in errors), errors)
+        self.assertTrue(any('研究框架必须位于' in error for error in errors), errors)
 
 if __name__ == '__main__':
     unittest.main()

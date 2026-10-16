@@ -7,7 +7,7 @@ import re
 
 from content_contract import CONTRACT_VERSION, FACTUAL_GATES
 
-PRESETS = ("method", "theory", "survey", "system")
+PRESETS = ("method", "theory", "survey", "system", "empirical", "argument")
 
 
 def build_scaffold(paper_id, preset="method", title_en="", title_cn=""):
@@ -42,7 +42,7 @@ def build_scaffold(paper_id, preset="method", title_en="", title_cn=""):
                         "title":"", "evidence_kind":"paper", "source_refs":[],
                         "config":{"summary":"", "nodes":[], "edges":[]}, "fallback_text":""}})
                 checklist.append({"view":"overview", "section_id":section_id,"block_id":"overview-method-framework",
-                    "task":"填写正文 method_pipeline：完整方法链、节点概要/输入/输出、边的流转/依据；用自动布局 helper 生成 row/column，审阅实际呈现。", "complete":False})
+                    "task":"填写正文 method_pipeline：完整研究路径或论证/组织关系；节点说明含义、前提或材料及形成的认识，边说明实际关联与依据；用自动布局 helper 生成 row/column，审阅实际呈现。", "complete":False})
     checklist.extend([
         {"task":"更新 intermediate/reading-plan.md 的主线、疑点与实际修订。", "complete":False},
         {"task":"按短指南完成隔离草稿预览及本次范围的独立验收，如实填写审阅结果后交付。", "complete":False}])

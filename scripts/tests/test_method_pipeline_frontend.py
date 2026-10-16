@@ -307,9 +307,9 @@ def main():
             assert page.evaluate('document.activeElement.dataset.nodeId') == 'merge'
             page.keyboard.press('Enter')
             assert component.get_attribute('data-selected-node-id') == 'merge'
-            component.get_by_role('button', name='下一阶段', exact=True).click()
+            component.get_by_role('button', name='下一节点', exact=True).click()
             assert component.get_attribute('data-selected-node-id') == 'check'
-            component.get_by_role('button', name='上一阶段', exact=True).click()
+            component.get_by_role('button', name='上一节点', exact=True).click()
             assert component.get_attribute('data-selected-node-id') == 'merge'
             component.get_by_role('button', name='返回全貌', exact=True).click()
             assert component.get_attribute('data-selected-node-id') == ''

@@ -1,0 +1,41 @@
+{
+  "preset": "argument",
+  "overview": [
+    {
+      "id": "problem",
+      "title": "问题背景",
+      "task": "学术争论、概念问题或文本与历史情境，以及本文提出的问题。"
+    },
+    {
+      "id": "method",
+      "title": "研究框架",
+      "task": "核心概念、材料、解释视角与论证关系，用method_pipeline展示真实概念或论证结构。"
+    },
+    {
+      "id": "innovation",
+      "title": "主要贡献",
+      "task": "新增概念区分、解释、材料关联或观点，按原文界定其贡献程度。"
+    },
+    {
+      "id": "evaluation",
+      "title": "论证与发现",
+      "task": "前提、引文、文本或史料如何支持主要论断，反例、分歧与其他解释怎样回应。"
+    },
+    {
+      "id": "cost",
+      "title": "适用范围与局限",
+      "task": "概念前提、材料版本与覆盖、语境及解释范围，说明尚存争议与未决问题。"
+    }
+  ],
+  "explanation": [
+    {
+      "id": "source-section",
+      "title": "按原论文大章节展开",
+      "task": "保留原论文大章节及顺序，在对应位置补概念、材料语境、前提与中间推理；涉及数学时展开原式，按需插入并解释原图表。"
+    }
+  ],
+  "component_suggestions": [
+    "method_pipeline"
+  ],
+  "authoring_note": "日常只读 references/reader_workflow.md；本清单只定位待填内容，专题规则遇到对应问题再查。"
+}

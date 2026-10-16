@@ -1136,16 +1136,16 @@ def validate_learning_content(data, paper_dir=None, preview=False):
             _rich({"version":1,"blocks":learning["blocks"]}, lp, errors, warnings, paper_dir, catalog)
     requirements = data.get("learning_requirements", {})
     if isinstance(requirements, dict) and "overview_framework" in requirements:
-        # Full modern paper readers keep the user's five overview sections.
+        # Full modern readers retain five overview sections across disciplines.
         # Drafts may still be incomplete; legacy and isolated field examples
         # retain their existing contract without a new marker or role system.
         if modern and not preview:
             if len(views["overview"]) != 5:
-                errors.append("overview.sections: 完整论文必须保留五个独立概览章节：问题背景、方法框架、创新点、实验与效果、开销与论文边界；不能合并")
+                errors.append("overview.sections: 完整论文必须保留五个独立概览章节：问题背景、研究框架、主要贡献、论证与发现、适用范围与局限；不能合并")
             elif (isinstance(requirements["overview_framework"], dict) and
                     isinstance(views["overview"][1], dict) and
                     views["overview"][1].get("id") != requirements["overview_framework"].get("section_id")):
-                errors.append("learning_requirements.overview_framework.section_id: 方法框架必须位于五段概览的第二节")
+                errors.append("learning_requirements.overview_framework.section_id: 研究框架必须位于五段概览的第二节")
         _overview_framework(requirements["overview_framework"], views["overview"],
             catalog, errors, paper_dir)
     if strict:
