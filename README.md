@@ -1,4 +1,4 @@
-# Academic Reading Master 3.1.1
+# Academic Reading Master 3.1.0
 
 面向科研新手的论文阅读skill：搜集核验论文，生成概览、原章详解，并通过固定阅读器批注提问与持续追问。全文双语翻译按需生成。
 
@@ -29,7 +29,7 @@
 
 ## 安装
 
-下载academic-reading-master-v3.1.1.skill或同内容.zip。它们是包含academic-reading-master目录的ZIP容器。宿主支持时按其方式导入；否则解压完整目录到skills位置，例如~/.agents/skills/。源码安装也须保留assets、scripts、schemas、vendor和许可，不复制测试输出或论文库。
+下载academic-reading-master-v3.1.0.skill或同内容.zip。它们是包含academic-reading-master目录的ZIP容器。宿主支持时按其方式导入；否则解压完整目录到skills位置，例如~/.agents/skills/。源码安装也须保留assets、scripts、schemas、vendor和许可，不复制测试输出或论文库。
 
 升级前备份现有安装目录；替换后重新加载skill。已有论文按迁移指南保留认可正文、块ID和历史，不自动批量改写。历史版本通过Git标签与Release保留，见下表。
 
@@ -71,7 +71,7 @@
 
 | 版本 | 定位 | 获取 |
 |---|---|---|
-| 3.1.1 | 当前完整阅读器：正文优先、翻译按需、持续批注、必要可视化 | [v3.1.1](https://github.com/noblespear/academic-reading-master/releases/tag/v3.1.1) |
+| 3.1.0 | 当前完整阅读器：正文优先、翻译按需、持续批注、必要可视化 | [v3.1.0](https://github.com/noblespear/academic-reading-master/releases/tag/v3.1.0) |
 | 3.0.1 AGPL 重发行 | 保留3.0.1功能，仅调整发布许可与说明 | [v3.0.1-agpl](https://github.com/noblespear/academic-reading-master/releases/tag/v3.0.1-agpl) |
 | 3.0.0 AGPL 重发行 | 首个统一三视图阅读器的历史版本 | [v3.0.0-agpl](https://github.com/noblespear/academic-reading-master/releases/tag/v3.0.0-agpl) |
 | 最早三遍阅读工作流 | 从2026-10-01备份恢复的未编号旧快照，尚未形成完整统一阅读器 | [legacy-three-pass-20261001](https://github.com/noblespear/academic-reading-master/releases/tag/legacy-three-pass-20261001) |
