@@ -4,6 +4,17 @@
 
 从找到值得读的论文开始，帮助读者理解研究问题与方法、对照原文提问，再把阅读和实际研究进展整理为可以提交的周报。讲解重视必要背景、术语含义、公式用途和证据，让新手逐步学会判断与表达。
 
+## 版本与分支
+
+| 分支 | 定位 | 适合的阅读任务 |
+|---|---|---|
+| [main](https://github.com/noblespear/academic-reading-master/tree/main) | 工科特化版 | 方法、算法和系统论文；重点解释实验效果、性能与资源开销 |
+| [general-purpose](https://github.com/noblespear/academic-reading-master/tree/general-purpose) | 通用版，基于 GitHub v3.1.1 | 理工、人文社科及跨学科论文；按研究类型解释论证与发现，实验、指标和资源分析按需展开 |
+
+两个分支使用同一 skill 名称和数据格式，安装时选择一个版本。已有阅读材料沿用原内容与稳定 ID。
+
+当前 **main 为工科特化版**。需要更广泛的学科适配，请切换到 [general-purpose 分支](https://github.com/noblespear/academic-reading-master/tree/general-purpose)，按该分支 README 安装。下文介绍 main 的功能与使用方式。
+
 ## 可以做什么
 
 | 功能 | 使用方式与产物 |
@@ -33,7 +44,7 @@
 2. 宿主不支持直接导入时，使用同内容的 `.zip` 文件，或将 `.skill` 的扩展名改为 `.zip` 后解压。把 `academic-reading-master/` 放入宿主的 skills 目录，确保 `SKILL.md` 位于该目录的顶层。例如，Codex 的用户 skills 目录可以使用 `~/.agents/skills/`。
 3. 按宿主的技能加载方式重新加载，然后在会话中提出任务。已有文献库时指定其位置；首次使用可让宿主创建 `PaperVault`。
 
-也可以从源代码安装：将仓库内容放入名为 `academic-reading-master` 的技能目录，保留完整的脚本、资源、数据规范与许可文件。没有必要复制开发测试产物。安装包及历史版本可在 [Releases](https://github.com/noblespear/academic-reading-master/releases) 获取。
+也可以从源代码安装：将仓库内容放入名为 `academic-reading-master` 的技能目录，保留完整的脚本、资源、数据规范与许可文件。没有必要复制开发测试产物。当前 v3.1.1 分发包对应工科特化版；通用版从 general-purpose 分支安装。安装包及历史版本可在 [Releases](https://github.com/noblespear/academic-reading-master/releases) 获取。
 
 可以直接这样提问：
 
