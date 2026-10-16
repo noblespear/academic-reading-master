@@ -36,7 +36,7 @@ V3_TEMPLATE_FILES = {
     "learning-components.js": "learning-components.js",
     "learning-visuals.css": "learning-visuals.css",
 }
-READER_VERSION = "3.1.0"
+READER_VERSION = "3.1.1"
 MANIFEST_NAME = "reader-manifest.json"
 RICH_BLOCK_TYPES = {"code", "quote", "details", "learning_aid"}
 VALID_BLOCK_TYPES = {"para", "formula", "figure", "table", "list", "algorithm", "diagram"}

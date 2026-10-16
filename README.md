@@ -1,10 +1,10 @@
-# Academic Reading Master 3.1.0
+# Academic Reading Master 3.1.1
 
 面向科研新手的论文阅读skill：搜集核验论文，生成概览、原章详解，并通过固定阅读器批注提问与持续追问。全文双语翻译按需生成。
 
 ## 阅读方式
 
-正文是唯一教学主线，展开隐藏前提、概念、公式和证据，随文使用例子、比喻与试算。概览五节接成问题缘由、方法流转、创新突破、实验证据及使用代价与边界的连续讲述。先按图已在位完成连续正文，再插入图片；额外读图提示以引用式字体放在图下。专业英文术语首次出现即对应中文译名。概览与详解省去逐段来源入口，保留顶部原文PDF。较长支线就地折叠，新稿不再生成独立AI说人话或全局开关。旧阅读器的补充和历史问答仍兼容显示。
+正文是唯一教学主线，展开隐藏前提、概念、公式和证据，随文使用例子、比喻与试算。概览五节接成问题缘由、方法流转、创新突破、实验证据及使用代价与边界的连续讲述。先按图已在位完成连续正文，再插入图片；额外读图提示以引用式字体放在图下。术语按领域习惯使用，保留通行英文写法；仅在有助于理解或回查原文时补充中英对照，后文保持称呼一致。概览与详解省去逐段来源入口，保留顶部原文PDF。较长支线就地折叠，新稿不再生成独立AI说人话或全局开关。旧阅读器的补充和历史问答仍兼容显示。
 
 默认成品为“正文讲清楚、简洁方法总图、相关原图表、必要局部图”。总图按功能模块组织，内部计算默认隐藏；点击节点或连线后在图下显示职责、输入输出、正文入口或传递与依赖，说明自然展开。图按页面宽度排布，窄屏纵向展示。其他交互只响应明确需求，仅文字翻页的steps默认不生成。公式采用无底色、无框的紧凑论文排版。单篇任务只填内容，不开发共享组件。
 
@@ -29,7 +29,7 @@
 
 ## 安装
 
-下载academic-reading-master-v3.1.0.skill或同内容.zip。它们是包含academic-reading-master目录的ZIP容器。宿主支持时按其方式导入；否则解压完整目录到skills位置，例如~/.agents/skills/。源码安装也须保留assets、scripts、schemas、vendor和许可，不复制测试输出或论文库。
+下载academic-reading-master-v3.1.1.skill或同内容.zip。它们是包含academic-reading-master目录的ZIP容器。宿主支持时按其方式导入；否则解压完整目录到skills位置，例如~/.agents/skills/。源码安装也须保留assets、scripts、schemas、vendor和许可，不复制测试输出或论文库。
 
 升级前备份现有安装目录；替换后重新加载skill。已有论文按迁移指南保留认可正文、块ID和历史，不自动批量改写。历史版本通过Git标签与Release保留，见下表。
 
@@ -71,7 +71,8 @@
 
 | 版本 | 定位 | 获取 |
 |---|---|---|
-| 3.1.0 | 当前完整阅读器：正文优先、翻译按需、持续批注、必要可视化 | [v3.1.0](https://github.com/noblespear/academic-reading-master/releases/tag/v3.1.0) |
+| 3.1.1 | 当前修订版：术语按领域习惯使用，取消强制中英对照 | [v3.1.1](https://github.com/noblespear/academic-reading-master/releases/tag/v3.1.1) |
+| 3.1.0 | 正文优先、翻译按需、持续批注、必要可视化；更正此前误标的3.1.1版本号 | [v3.1.0](https://github.com/noblespear/academic-reading-master/releases/tag/v3.1.0) |
 | 3.0.1 AGPL 重发行 | 保留3.0.1功能，仅调整发布许可与说明 | [v3.0.1-agpl](https://github.com/noblespear/academic-reading-master/releases/tag/v3.0.1-agpl) |
 | 3.0.0 AGPL 重发行 | 首个统一三视图阅读器的历史版本 | [v3.0.0-agpl](https://github.com/noblespear/academic-reading-master/releases/tag/v3.0.0-agpl) |
 | 最早三遍阅读工作流 | 从2026-10-01备份恢复的未编号旧快照，尚未形成完整统一阅读器 | [legacy-three-pass-20261001](https://github.com/noblespear/academic-reading-master/releases/tag/legacy-three-pass-20261001) |
