@@ -826,8 +826,8 @@ def _overview_framework(requirement, sections, catalog, errors, paper_dir=None):
     """Check the declared method figure's location and renderable shape only.
 
     The registration declares which overview section covers the method. Whether
-    the figure covers the complete method and agrees with the prose remains a
-    human review; IDs and a graph component cannot certify those semantics.
+    the figure covers the complete method and agrees with the prose remains an
+    authoring judgment; registration does not certify those semantics.
     """
     path = "learning_requirements.overview_framework"
     if not isinstance(requirement, dict):
@@ -835,8 +835,8 @@ def _overview_framework(requirement, sections, catalog, errors, paper_dir=None):
         return
     before = len(errors)
     kind = requirement.get("kind")
-    if kind is not None and kind != "interactive_pipeline":
-        errors.append(path + ".kind: only interactive_pipeline is supported when provided")
+    if kind is not None and kind not in ("static_figure", "interactive_pipeline"):
+        errors.append(path + ".kind: must be static_figure or interactive_pipeline when provided")
     for field in ("section_id", "block_id"):
         _id(requirement.get(field), path + "." + field, errors)
     if len(errors) != before:
@@ -863,6 +863,9 @@ def _overview_framework(requirement, sections, catalog, errors, paper_dir=None):
         _local_asset(block.get("src", block.get("asset")), bp + ".src", errors, paper_dir)
         if "svg" in block:
             errors.append(bp + ".svg: use a registered local static asset")
+        return
+    if kind == "static_figure":
+        errors.append(path + ".block_id: static_figure requires a top-level figure or diagram with a local image asset")
         return
     if block.get("type") != "learning_aid":
         errors.append(path + ".block_id: framework must be a figure, diagram, or directed method learning_aid")
@@ -904,8 +907,8 @@ def validate_learning_content(data, paper_dir=None, preview=False):
     block, including details/quote children. Those IDs share one paper scope;
     component fallback documents keep their local rich-document ID scope.
     Retired default_annotations metadata is ignored without parsing or rendering.
-    3.2 checks formula references, while humans review the actual body explanation.
-    Preview skips only publication readiness and completed review, never safety.
+    3.2 checks formula references; semantic review metadata is optional.
+    Preview skips readiness (and legacy completed review), never safety.
     """
     errors, warnings = [], []
     if not isinstance(data, dict):
@@ -924,11 +927,11 @@ def validate_learning_content(data, paper_dir=None, preview=False):
         _id(data.get("id"), "id", errors)
     if strict:
         if not preview and data.get("content_status") != "ready":
-            errors.append("content_status: unfinished scaffold cannot deploy; complete content and review, then set ready")
+            errors.append("content_status: unfinished scaffold cannot deploy; complete content, then set ready")
         elif preview and data.get("content_status") not in (None, "incomplete", "ready"):
             errors.append("content_status: must be incomplete or ready")
         review = data.get("content_review")
-        if review is None and preview:
+        if review is None and (modern or preview):
             pass
         elif not isinstance(review, dict):
             errors.append("content_review: required semantic review record")
@@ -940,13 +943,13 @@ def validate_learning_content(data, paper_dir=None, preview=False):
                 if not isinstance(scores, list) or len(scores) != 10 or any(type(x) is not int or not 0 <= x <= 2 for x in scores):
                     errors.append("content_review.plain_language_scores: when provided, requires ten integer 0/1/2 scores")
             gates = review.get("factual_gates")
-            if preview:
+            if modern or preview:
                 if gates is not None and (not isinstance(gates, dict) or any(type(value) is not bool for value in gates.values())):
                     errors.append("content_review.factual_gates: when provided, gate values must be booleans")
                 _text(review.get("reviewer"), "content_review.reviewer", errors, required=False)
             elif not isinstance(gates, dict) or any(gates.get(key) is not True for key in FACTUAL_GATES):
                 errors.append("content_review.factual_gates: all six factual gates must pass")
-            if not preview:
+            if not modern and not preview:
                 _text(review.get("reviewer"), "content_review.reviewer", errors)
     catalog = data.get("learning_catalog", {})
     if not isinstance(catalog, dict):

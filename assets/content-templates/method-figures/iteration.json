@@ -1,0 +1,78 @@
+{
+  "title": "合成示例：迭代与停止条件",
+  "nodes": [
+    {
+      "id": "input",
+      "label": "输入对象",
+      "glyph": "mesh",
+      "column": 0,
+      "row": 0
+    },
+    {
+      "id": "init",
+      "label": "建立状态",
+      "detail": "仅初始化一次",
+      "glyph": "matrix",
+      "column": 1,
+      "row": 0
+    },
+    {
+      "id": "update",
+      "label": "迭代更新",
+      "detail": "执行核心操作",
+      "glyph": "feature",
+      "column": 2,
+      "row": 0
+    },
+    {
+      "id": "check",
+      "label": "停止条件",
+      "detail": "检查目标",
+      "glyph": "none",
+      "column": 2,
+      "row": 1
+    },
+    {
+      "id": "output",
+      "label": "输出结果",
+      "glyph": "output",
+      "column": 1,
+      "row": 1
+    }
+  ],
+  "edges": [
+    {
+      "source": "input",
+      "target": "init",
+      "kind": "flow"
+    },
+    {
+      "source": "init",
+      "target": "update",
+      "kind": "flow"
+    },
+    {
+      "source": "update",
+      "target": "check",
+      "kind": "flow"
+    },
+    {
+      "source": "check",
+      "target": "output",
+      "kind": "branch",
+      "label": "满足"
+    },
+    {
+      "source": "check",
+      "target": "update",
+      "kind": "feedback",
+      "label": "未满足"
+    }
+  ],
+  "theme": {
+    "canvas_min_width": 640,
+    "node_width": 160,
+    "column_gutter": 54,
+    "margin": 24
+  }
+}

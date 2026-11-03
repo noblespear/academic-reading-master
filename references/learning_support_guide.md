@@ -6,15 +6,15 @@
 
 ## 在正文使用成熟组件
 
-方法框架使用method_pipeline，placement:"body"，登记overview_framework。按功能模块切分，通常先尝试4–7主要模块，输入输出另计；内部运算留正文局部图。骨架可由prepare_method_pipeline自动补column/row，完整显式grid保持兼容。
+新稿方法框架使用中文静态figure与overview_framework.kind:"static_figure"，见[短指南](reader_workflow.md)。以下method_pipeline字段仅为旧稿兼容或用户明确要求交互时使用，不是日常写作必读项。
 
-除方法总图外，其他组件只在用户明确需要演示时采用，使用给定受控类型与字段。默认以原图表和必要静态局部图表达关系。真实method_pipeline和comparison_chart可用paper并附来源，其余教学演示用teaching_example。原结果单位与比较条件保持原样；不把公式或假设演示当性能预测。未支持的共享能力另作代码任务，单篇不扩类型/运行时。
+除方法总图外，AI 自主判断何时需要其他演示，直接配置现有受控类型与字段，无须用户逐项指定。优先采用能讲清关系的原图表或静态局部图，需要操作观察变化时再用交互组件。真实method_pipeline和comparison_chart可用paper并附来源，其余教学演示用teaching_example。原结果单位与比较条件保持原样；不把公式或假设演示当性能预测。未支持的共享能力另作代码任务，单篇不扩类型/运行时。
 
 inline aid与aid_id恰好一个；inline无需维护空catalog。组件fallback使用已有富文档或可读文字，静态SVG资源必须安全本地。默认状态与关键变化可复算，输入边界明确。组件类型完整说明只在配置实际类型时查阅，不进入轻量批注会话。
 
 ## 旧3.1与历史富内容
 
-旧learning及narrative blocks、概念目录和完整formula_explanations仍按原合同读取，原锚点和用户问题保留。旧数据中关键公式的隐藏解释门槛继续兼容；新3.2由实际可见正文审阅，不要求另一份purpose/symbols/operations/example等副本。
+旧learning及narrative blocks、概念目录和完整formula_explanations仍按原合同读取，原锚点和用户问题保留。旧数据中关键公式的隐藏解释门槛继续兼容；新3.2把实际解释写在可见正文，不要求另一份purpose/symbols/operations/example等副本。
 
 旧note_content、answer_content、附件及study_state继续保存显示；新模型答疑仅answer/sources，不生成组件配置或嵌套JSON字符串。富文档{version:1,blocks:[...]}仍由共享安全渲染器处理。
 
@@ -22,7 +22,7 @@ inline aid与aid_id恰好一个；inline无需维护空catalog。组件fallback�
 
 需要新绘静态图时才查[制图适配](visual_authoring_guide.md)；填写现有组件无需先加载其他图形手册。下表按type查当前字段，完整上游原版只供专门设计或维护时查阅。
 
-先确定要解释的关系，再按[覆盖规则](visual_decision_guide.md)选择原图表或必要局部图。概览的 `method_pipeline` 点选节点显示概要、输入和输出，点选边显示流转内容及依赖理由，同时突出相应关系。用户要求的其他交互才检查选择、变化或对照是否帮助理解。实际结果图标来源、单位与比较口径；假设性演示标教学示例，不把边数或矩阵秩当作 token 或准确率。桌面和窄屏核对图中文字与真实关系，实际操作本次使用的组件。
+先确定要解释的关系，再选择原图表或必要局部图。历史 `method_pipeline` 点选节点显示概要、输入和输出，点选边显示流转内容及依赖理由；新稿方法图用静态figure。其他局部交互按变化或对照是否帮助理解取舍。实际结果图标来源、单位与比较口径；假设性演示标教学示例。实际显示异常时才排查对应组件，不另设多端验收。
 
 所有组件是登记类型与 JSON 配置，不能携带 JS、HTML 或 eval。信封为 {id,type,version:1,title?,evidence_kind:"teaching_example",config,fallback:{version:1,blocks:[...]}}；兼容 fallback_text，但新内容优先保留完整图文回退。组件输出是教学结果，不能自动进入论文实验结论。
 
@@ -49,7 +49,7 @@ method_pipeline 自3.7支持。配置的 `summary` 描述总图主线；每个�
 
 每条边的 `flow` 与 `cause` 为必需非空字符串，前者解释传递或提供什么，后者解释下游为何需要、这条关系为何成立。`kind` 为 `flow`、`branch`、`feedback` 或 `dependency`，`label` 写出实际关系。依赖、反馈和分支按各自性质解释，不把数据流或论证依赖写成未经证实的因果效应。点边高亮该边与两端，并显示流转内容与理由；节点和边互斥选择，提供图上点选和键盘/触屏入口，刷新保存当前选择，复位回到全貌。静态回退应保留全部节点概要与输入输出、全部边的流转内容与理由。
 
-不得把分支/反馈强排成一条直线。可选 `reading_order` 只定义节点的阅读顺序，不改变图中的执行/依赖关系。新稿 overview_framework 的 kind 为 interactive_pipeline，指向顶层 placement:body 的该组件。新稿在正文使用；旧补充与历史批注按原容器呈现，不设置body越过所属容器。完整例见[方法流水线数据样板](../assets/content-templates/method-pipeline-example.json)，其中是合成演示，不是论文证据。
+不得把分支/反馈强排成一条直线。可选 `reading_order` 只定义节点的阅读顺序，不改变执行/依赖关系。历史 overview_framework.kind:"interactive_pipeline" 指向顶层 placement:body 的该组件；默认新稿登记static_figure。旧补充与历史批注按原容器呈现，不设置body越过所属容器。完整例见[方法流水线数据样板](../assets/content-templates/method-pipeline-example.json)，其中是合成演示，不是论文证据。
 
 weighted_degree 自阅读器3.3支持，仅用于教学。固定4节点，label最多12字符；1–6条边，无自环和重复节点对（含反向），权重0–1且一位小数；只允许上表字段。按删前全图的入边、出边权重之和排名，移除最低的一个节点及其关联边，不在删后重新计分以偷换筛选依据。并列按nodes顺序选最前者，必须在界面说明这是教学约定，不能称为论文规定。用户主动提问仍可带该组件当前状态。选用该演示时，前后文字要说明计算值如何进入方法；不能把度分数等同真实贡献、准确率或token。
 

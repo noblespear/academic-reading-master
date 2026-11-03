@@ -1,0 +1,41 @@
+{
+  "title": "合成示例：顺序变换",
+  "nodes": [
+    {
+      "id": "input",
+      "label": "输入数据",
+      "detail": "明确对象",
+      "glyph": "input"
+    },
+    {
+      "id": "encode",
+      "label": "建立表示",
+      "detail": "核心变换",
+      "glyph": "feature"
+    },
+    {
+      "id": "output",
+      "label": "输出结果",
+      "detail": "保留任务语义",
+      "glyph": "output"
+    }
+  ],
+  "edges": [
+    {
+      "source": "input",
+      "target": "encode",
+      "kind": "flow"
+    },
+    {
+      "source": "encode",
+      "target": "output",
+      "kind": "flow"
+    }
+  ],
+  "theme": {
+    "canvas_min_width": 640,
+    "node_width": 160,
+    "column_gutter": 54,
+    "margin": 24
+  }
+}

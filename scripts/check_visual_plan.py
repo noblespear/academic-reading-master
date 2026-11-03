@@ -306,7 +306,7 @@ def validate_visual_plan(plan, data, require_method_pipeline=False, require_inte
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--plan", required=True, help="reading-plan.md with one visual-plan fence")
+    parser.add_argument("--plan", required=True, help="legacy visual-plan document (optional compatibility tool)")
     parser.add_argument("--data", required=True, help="paper-data.js or JSON")
     parser.add_argument("--require-method-pipeline", action="store_true",
                         help="new full reader: require registered overview method_pipeline and its fulfilled interactive plan")

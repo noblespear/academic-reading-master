@@ -36,7 +36,7 @@ V3_TEMPLATE_FILES = {
     "learning-components.js": "learning-components.js",
     "learning-visuals.css": "learning-visuals.css",
 }
-READER_VERSION = "3.1.1"
+READER_VERSION = "3.2.0"
 MANIFEST_NAME = "reader-manifest.json"
 RICH_BLOCK_TYPES = {"code", "quote", "details", "learning_aid"}
 VALID_BLOCK_TYPES = {"para", "formula", "figure", "table", "list", "algorithm", "diagram"}
@@ -616,8 +616,10 @@ def main():
         sys.exit(1)
 
     data = json.loads(re.sub(r"^\s*window\.PAPER_DATA\s*=\s*", "", js_path.read_text(encoding="utf-8")).strip().rstrip(";"))
-    n_blocks = sum(len(s.get("blocks", [])) for s in data.get("sections", []))
-    print(f"✓ paper-data.js 校验通过: {len(data.get('sections', []))} 章节 / {n_blocks} blocks / pipeline {len(data.get('pipeline', []))} 节点")
+    views = {name: data.get(name, {}).get("sections", []) for name in ("overview", "explanation")}
+    views["translation"] = data.get("sections", [])
+    n_blocks = sum(len(s.get("blocks", [])) for sections in views.values() for s in sections)
+    print(f"✓ paper-data.js 校验通过: 概览 {len(views['overview'])} 节 / 详解 {len(views['explanation'])} 章 / 翻译 {len(views['translation'])} 章 / 共 {n_blocks} blocks")
 
     try:
         manifest = deploy_templates(paper_dir, skill_dir, data, args.replace_custom_templates)

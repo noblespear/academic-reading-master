@@ -34,7 +34,8 @@ class OverviewStructureTests(unittest.TestCase):
         for preset in PRESETS:
             data, todo = build_scaffold('paper', preset)
             self.assertEqual([s['title_cn'] for s in data['overview']['sections']], TITLES)
-            self.assertEqual(data['overview']['sections'][1]['id'], data['learning_requirements']['overview_framework']['section_id'])
+            self.assertEqual(data['overview']['sections'][1]['id'], 'overview-method')
+            self.assertEqual(data['learning_requirements']['overview_framework']['section_id'], 'overview-method')
 
     def test_merging_sections_is_rejected_even_if_their_content_is_retained(self):
         data = full_reader()

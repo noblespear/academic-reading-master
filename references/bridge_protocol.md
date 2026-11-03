@@ -333,7 +333,9 @@ python "<skill目录>\scripts\migrate_reader_v3.py" --vault "<PaperVault目录>"
 
 部署脚本检测 `schema_version>=3`，使用 `reader-v3.html→reader.html`、`reader-v3.js`、`styles-v3.css`，递归复制 `assets/math`。公式块必须有 LaTeX，并经过基本括号/分隔符结构检查；这种检查不代替浏览器实际数学渲染 QA。已有 schema v1/v2 的另外论文仍使用原模板与原 `serve_reader.py`；旧服务文件没有替换。
 
-3.9 Codex 答疑未显式配置模型或档位时，不在 thread/start、thread/resume 或 turn/start 传入对应覆盖参数，沿用宿主默认或已有会话设置。启动与恢复仍应用当前答疑 developerInstructions；用户明确指定的 model/effort 分别覆盖，不修改全局宿主配置。覆盖示例：
+正文、绘图、答疑、翻译的用户选择由 agent 在 skill 加载时确认，默认保存在 `${CODEX_HOME}/academic-reading-master/model-profiles.json`（未设置 `CODEX_HOME` 时使用 `~/.codex`）；`<vault>/.reader/model-profiles.json` 兼容按字段覆写，缺项读取用户级。已有相关选择沿用，本次明确指定优先；未配置且未指定的待执行角色由 agent 在聊天中集中询问并保存，明确继承也是已配置选择。读取和写入不启动模型，浏览器没有配置入口或 `/api/model-settings` 读写路由。正文/绘图由宿主实际按角色调度，QA在bridge启动时解析，翻译在新job创建时冻结。具体配置与CLI见[模型与上下文](model_and_context_policy.md)。QA改变有效路由时仅在新的未ACK claim准备新generation会话，不复制旧聊天，也不解除unknown阻塞；相同路由保持会话。
+
+Codex 答疑明确选择继承模型或档位时，不在 thread/start、thread/resume 或 turn/start 传入对应覆盖参数，沿用宿主默认或已有会话设置。启动与恢复仍应用当前答疑 developerInstructions；用户明确指定的 model/effort 分别覆盖，不修改全局宿主配置。旧全局CLI覆盖保留为未配置字段的兼容入口：
 
 ```powershell
 python "<skill目录>\scripts\open_reader.py" --vault "<PaperVault目录>" 1996_progressive_meshes --model <host-model-id> --effort <host-supported-effort>
@@ -377,7 +379,7 @@ turn/interrupt 用于删除、修订、replacement 与停止
 
 缺少依据时，宿主dynamic tool `reader_source`按物理页或短查询返回当前PDF的相关原文，绑定PDF哈希并限制每轮范围与容量；只取实际所需材料，覆盖状态据实报告。PDF变更、不可读或无可抽取文字均显式返回，不能据空文本断言原页空白。旧注册text_path仍按补充材料身份使用。
 
-`selected_fields`与`selected_blocks`保留选区实际字段，按块级或章级source_refs、formula_ref、明确图号或式号追踪来源。`selected_source_images`只使用登记图片及已核对SHA-256；原始公式页图单独缓存，不覆盖作者asset-registry。超出本轮图片范围的项标为metadata-only。
+`selected_fields`与`selected_blocks`保留选区实际字段或其精确引用，按块级或章级source_refs、formula_ref、明确图号或式号追踪来源。若选中块的完整可读投影与唯一reader_body块一致，用reader_body_ref携带view/section/parents/content_id及block_sha256，正文只交付一次；字段值能从该块精确解析时仅给field、value_sha256和引用。无法匹配的字段内联，translation选区不假定存在于正文；本包已有选中块可由selected_block_ref的index与块哈希引用。引用去重不独立提交新状态，仍只在host确认turn/start后提交正文送达基线。`selected_source_images`只使用登记图片及已核对SHA-256；原始公式页图单独缓存，不覆盖作者asset-registry。超出本轮图片范围的项标为metadata-only。
 
 最终宿主输入沿用 `localImage` 通道，并再次核对本地路径、图片容器和哈希。像素清单与metadata-only清单明确传给模型；实际模型模态未知时不传像素。SVG仍以已有结构与图注解释，不执行或自动转换任意代码。模型不能声称看过仅提供元数据的图，也不能把教学图当原论文证据。
 

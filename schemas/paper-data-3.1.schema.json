@@ -103,7 +103,7 @@
       "type": "object",
       "properties": {
         "overview_framework": {
-          "description": "Optional additive registration of a default-visible top-level overview method framework. New scaffolds declare kind interactive_pipeline, requiring a placement body method_pipeline aid; static figures cannot satisfy it. Registrations without kind retain legacy figure/diagram and graph_walkthrough compatibility. Complete method coverage and agreement with prose require human review.",
+          "description": "Optional additive registration of a default-visible top-level overview method framework. New scaffolds declare kind static_figure for a complete static Chinese architecture figure/diagram using a local image asset. Explicit interactive_pipeline retains the body method_pipeline contract; registrations without kind retain historical figure/diagram and graph_walkthrough compatibility. Complete method coverage and agreement with prose remain an authoring judgment; no review record is required.",
           "type": "object",
           "required": [
             "section_id",
@@ -117,8 +117,11 @@
               "$ref": "content-types.schema.json#/$defs/id"
             },
             "kind": {
-              "const": "interactive_pipeline",
-              "description": "When present, require the generic clickable directed method map. Omit only for pre-existing registrations."
+              "enum": [
+                "static_figure",
+                "interactive_pipeline"
+              ],
+              "description": "static_figure requires a top-level figure/diagram with a local SVG, PNG or other supported image. interactive_pipeline retains the explicit legacy method_pipeline requirement. Omission retains historical registration behavior."
             }
           }
         },

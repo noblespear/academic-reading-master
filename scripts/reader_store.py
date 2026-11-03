@@ -129,6 +129,9 @@ class ReaderStore:
             self.db.execute("ALTER TABLE sessions ADD COLUMN generation INTEGER NOT NULL DEFAULT 0")
         if "state" not in session_columns:
             self.db.execute("ALTER TABLE sessions ADD COLUMN state TEXT NOT NULL DEFAULT 'unknown'")
+        for column in ("model_route", "pending_model_route"):
+            if column not in session_columns:
+                self.db.execute("ALTER TABLE sessions ADD COLUMN " + column + " TEXT NOT NULL DEFAULT ''")
         setting_columns = {row[1] for row in self.db.execute("PRAGMA table_info(assistant_settings)")}
         if "connection_revision" not in setting_columns:
             self.db.execute("ALTER TABLE assistant_settings ADD COLUMN connection_revision INTEGER NOT NULL DEFAULT 0")
@@ -672,6 +675,42 @@ class ReaderStore:
             raise StoreError(409, "task lease belongs to another claim")
         return task
 
+    def prepare_session_route(self, tid, bid, nonce, route):
+        """Choose a route before ack; current/unknown turns can never be moved.
+
+        A route is confirmed only by acknowledge after a real session exists.
+        Generation changes retire the old mapping without replaying any history.
+        """
+        from model_profiles import route_fingerprint
+        if not isinstance(route, str) or not re.fullmatch(r"[0-9a-f]{64}", route):
+            raise StoreError(400, "invalid session route")
+        with self.transaction():
+            self._touch_bridge(bid)
+            task = self._owned(tid, bid, nonce)
+            if task["state"] != "claimed" or task["thread_id"] or task["turn_id"]:
+                raise StoreError(409, "only an unacknowledged claim can prepare a route")
+            if (task["lease_until"] or 0) < self.clock() or not self._current_session(task):
+                raise StoreError(409, "claim lease or session generation changed")
+            busy = self.db.execute("SELECT 1 FROM tasks WHERE paper_id=? AND id<>? AND state IN ('claimed','running','unknown')",
+                                   (task["paper_id"], tid)).fetchone()
+            if busy:
+                raise StoreError(409, "paper has another unresolved delivery")
+            adapter = self.db.execute("SELECT adapter FROM bridges WHERE id=?", (bid,)).fetchone()[0]
+            session = self.db.execute("SELECT * FROM sessions WHERE paper_id=? AND adapter=?", (task["paper_id"], adapter)).fetchone()
+            legacy_default = not session["model_route"] and route == route_fingerprint({"adapter": adapter})
+            same_route = session["model_route"] == route or legacy_default
+            generation = session["generation"]
+            thread_id = session["thread_id"] or None
+            if thread_id and not same_route:
+                generation += 1
+                thread_id = None
+                self.db.execute("UPDATE sessions SET thread_id='',generation=?,state='unknown',model_route='' WHERE paper_id=? AND adapter=?",
+                                (generation, task["paper_id"], adapter))
+                self.db.execute("UPDATE tasks SET session_generation=? WHERE id=?", (generation, tid))
+            self.db.execute("UPDATE sessions SET pending_model_route=?,updated_at=? WHERE paper_id=? AND adapter=?",
+                            (route, now_iso(), task["paper_id"], adapter))
+            return {"thread_id": thread_id, "session_generation": generation}
+
     def acknowledge(self, tid, bid, nonce, thread_id=None, turn_id=None):
         with self.transaction():
             self._touch_bridge(bid)
@@ -691,6 +730,8 @@ class ReaderStore:
                     raise StoreError(409, "session thread mapping changed")
                 self.db.execute("INSERT INTO sessions(paper_id,adapter,thread_id,updated_at,generation,state) VALUES(?,?,?,?,?,'connected') ON CONFLICT(paper_id,adapter) "
                     "DO UPDATE SET thread_id=excluded.thread_id,updated_at=excluded.updated_at,state='connected' WHERE sessions.generation=excluded.generation", (task["paper_id"], adapter, thread_id, now_iso(), task["session_generation"]))
+                self.db.execute("UPDATE sessions SET model_route=CASE WHEN pending_model_route<>'' THEN pending_model_route ELSE model_route END,pending_model_route='' WHERE paper_id=? AND adapter=? AND generation=?",
+                                (task["paper_id"], adapter, task["session_generation"]))
             self._task_annotation(task, "running")
         self.project(task["paper_id"])
         return {"ok": True}

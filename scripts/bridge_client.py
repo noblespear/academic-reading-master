@@ -203,7 +203,23 @@ def resolve_learning_field(block, field, catalog, all_blocks=()):
     return value
 
 
+def recover_existing_session(adapter, task, pulse):
+    """Inspect the old delivery without applying a newly selected QA route."""
+    original = getattr(adapter, "config", None)
+    if not isinstance(original, dict):
+        return adapter.recover(task, pulse)
+    adapter.config = {key: value for key, value in original.items() if key not in ("model", "effort")}
+    try:
+        return adapter.recover(task, pulse)
+    finally:
+        adapter.config = original
+
+
 def run(config):
+    from model_profiles import resolve_role_config, route_fingerprint
+    if config.get("vault") and not config.get("qa_profile_snapshot"):
+        config = resolve_role_config(config["vault"], "qa", config)
+    route = route_fingerprint(config)
     api = ReaderAPI(config)
     adapter_name = config.get("adapter", "codex")
     api.post("register", {"adapter": adapter_name, "info": {"pid": os.getpid(), "health": "unknown",
@@ -291,7 +307,7 @@ def run(config):
                 recovery_checked.add(task["id"])
                 active_task = task
                 try:
-                    answer = adapter.recover(task, pulse)
+                    answer = recover_existing_session(adapter, task, pulse)
                     publish(task, answer)
                 except UnknownDelivery as exc:
                     # Leave the acknowledged task unknown. Marking it failed
@@ -319,13 +335,24 @@ def run(config):
             try:
                 directory = safe_paper_dir(config["vault"], task["paper_id"])
                 context = build_context(directory, task)
-                thread_id = adapter.session(directory, task.get("session_thread_id"))
+                prepared = api.post("session-route", {"task_id": task["id"], "claim_token": task["claim_token"], "route": route})
+                task["session_generation"] = prepared["session_generation"]
+                thread_id = adapter.session(directory, prepared.get("thread_id"))
                 # Durable ack before turn/start: a crash in the send/response
                 # window is reconciled against the thread instead of re-sent.
                 api.post("ack", {"task_id": task["id"], "claim_token": task["claim_token"], "thread_id": thread_id})
                 acknowledged = True
                 task["thread_id"] = thread_id
-                turn_id = adapter.start(thread_id, task, context)
+                host_task = task
+                if not prepared.get("thread_id"):
+                    # A new route starts with this question and paper evidence.
+                    # Stored QA history stays in the reader, never migrated to a
+                    # different model as fresh prompt input.
+                    payload = task.get("payload", {})
+                    payload = json.loads(payload) if isinstance(payload, str) else dict(payload)
+                    payload.pop("history", None)
+                    host_task = {**task, "payload": payload}
+                turn_id = adapter.start(thread_id, host_task, context)
                 task["turn_id"] = turn_id
                 api.post("ack", {"task_id": task["id"], "claim_token": task["claim_token"], "thread_id": thread_id, "turn_id": turn_id})
                 answer = adapter.wait(thread_id, turn_id, pulse)

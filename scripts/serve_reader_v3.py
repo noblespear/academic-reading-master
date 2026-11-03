@@ -22,6 +22,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from reader_store import ReaderStore, StoreError
 from runtime_lock import RuntimeLock
+from model_profiles import load_profiles, resolve_role_config
 
 MAX_BODY = 2 * 1024 * 1024
 
@@ -93,6 +94,7 @@ class ReaderServer(ThreadingHTTPServer):
         try:
             self.store = ReaderStore(vault)
             self.store.paper_dir(paper)
+            load_profiles(vault)
         except Exception:
             if hasattr(self, "store"):
                 self.store.close()
@@ -155,9 +157,10 @@ class ReaderServer(ThreadingHTTPServer):
         if self.bridge_process is not None and self.bridge_process.poll() is None:
             return False
         script = Path(__file__).resolve().parent / "bridge_client.py"
+        qa_config = resolve_role_config(self.store.vault, "qa", self.bridge_config)
         atomic_json(self.bridge_config_file, {"url": self.base_url, "token": self.bridge_token,
                     "vault": str(self.store.vault), "adapter": self.bridge_kind,
-                    "service_instance_id": self.service_instance_id, **self.bridge_config})
+                    "service_instance_id": self.service_instance_id, **qa_config, "qa_profile_snapshot": True})
         if self.bridge_log is None:
             self.bridge_log = (self.store.state_dir / "bridge.log").open("ab", buffering=0)
         self.bridge_process = subprocess.Popen([sys.executable, str(script), "--config", str(self.bridge_config_file)],
@@ -407,6 +410,8 @@ class ReaderHandler(BaseHTTPRequestHandler):
             return self._json(200, store.adopt(data["task_id"], bid))
         if action == "ack":
             return self._json(200, store.acknowledge(data["task_id"], bid, data["claim_token"], data.get("thread_id"), data.get("turn_id")))
+        if action == "session-route":
+            return self._json(200, store.prepare_session_route(data["task_id"], bid, data["claim_token"], data.get("route")))
         if action == "result":
             return self._json(200, store.result(data["task_id"], bid, data["claim_token"], data.get("result"), data.get("error")))
         if action == "unknown":

@@ -140,7 +140,7 @@ class MethodPipelineTests(unittest.TestCase):
         data = example()
         data['learning_requirements']['overview_framework']['kind'] = 'static'
         errors, _ = validate_learning_content(data)
-        self.assertTrue(any('.kind: only interactive_pipeline' in e for e in errors), errors)
+        self.assertTrue(any('.kind: must be static_figure or interactive_pipeline' in e for e in errors), errors)
 
     def test_catalog_reference_and_existing_registrations_remain_valid(self):
         data = example()

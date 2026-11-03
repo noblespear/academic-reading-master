@@ -36,6 +36,7 @@ def main():
     server = ThreadingHTTPServer(('127.0.0.1', 0), StaticHandler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     anns, requests, errors = [], [], []
+    forced_conflicts = set()
     def api_route(route):
         req = route.request
         path = req.url.split('/api/', 1)[1].split('?')[0]
@@ -68,8 +69,11 @@ def main():
                     anns.remove(ann)
                     data = {'ok': True}
                 elif req.method == 'PATCH':
+                    if aid in forced_conflicts:
+                        forced_conflicts.remove(aid)
+                        ann['revision'] += 1
                     if payload['revision'] != ann['revision']:
-                        status, data = 409, {'current': ann, 'error': 'conflict'}
+                        status, data = 409, {'current': ann}
                     else:
                         ann.update(user_note=payload['user_note'], revision=ann['revision']+1, status='running' if payload.get('submit') else ann['status'])
                         data = {'annotation': ann}
@@ -209,11 +213,11 @@ def main():
         page.get_by_role('button',name='删除批注',exact=True).click()
         page.wait_for_function('ReaderV3.getState().annotations.length === 1')
         assert len(anns) == 1
-        # Source jumps and reading position are independent in each view.
+        # Overview omits per-block sources; reading position is independent in each view.
         page.locator('#panel-close').click()
         page.locator('[data-view="overview"]').click()
-        page.locator('[data-block-id="ov-summary"] .source-details > summary').click()
-        page.get_by_role('button',name='引言 · 第 1 段',exact=True).click()
+        assert page.locator('[data-block-id="ov-summary"] .source-details').count() == 0
+        page.locator('[data-view="translation"]').click()
         page.wait_for_function('ReaderV3.getState().view === "translation"')
         page.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
         page.evaluate('document.getElementById("reading-scroll").scrollTop=300')
@@ -232,7 +236,7 @@ def main():
         original_note=anns[0]['user_note']
         page.evaluate('(id)=>ReaderV3.openAnnotation(id)',anns[0]['id'])
         page.locator('#annotation-note').fill('CAS conflict draft stays local')
-        anns[0]['revision'] += 1
+        forced_conflicts.add(anns[0]['id'])
         page.get_by_role('button',name='保存修改',exact=True).click()
         page.wait_for_function('document.getElementById("toast").textContent.includes("别处更新")')
         assert anns[0]['user_note'] == original_note

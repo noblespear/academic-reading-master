@@ -233,8 +233,8 @@ def main():
     parser.add_argument("--no-open", action="store_true", help="启动但不打开浏览器")
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument("--bridge", choices=("codex", "mock", "none"), default="codex")
-    parser.add_argument("--model", help="可选宿主模型覆盖；未提供时继承宿主/会话设置")
-    parser.add_argument("--effort", help="可选推理强度覆盖；未提供时继承宿主/会话设置")
+    parser.add_argument("--model", help="兼容旧全局模型覆盖；已保存的各环节设置优先，未配置时继承宿主")
+    parser.add_argument("--effort", help="兼容旧全局推理强度覆盖；各环节可在阅读器模型设置中独立选择")
     parser.add_argument("--codex-bin", help="可选codex可执行文件路径")
     args = parser.parse_args()
 
