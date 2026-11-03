@@ -12,7 +12,7 @@ The Academic Reading Master project code is licensed under AGPL-3.0-only. This d
 
 ## Visual guidance
 
-The project supplies its own reader components and concise visual-authoring adaptation in [references/visual_authoring_guide.md](references/visual_authoring_guide.md). The full installed OpenAI Visualize snapshot has no verified public redistribution grant and is excluded from public Git trees and release archives. Private local research backups are not part of this distribution.
+The project supplies its own reader components and a concise draw-science reader adaptation in [references/visual_authoring_guide.md](references/visual_authoring_guide.md). The separately installed draw-science skill and its tools remain external dependencies; no upstream draw-science source is bundled here. The earlier private OpenAI Visualize snapshot is archived outside installed skill roots and is excluded from public Git trees and release archives. Private local research backups are not part of this distribution.
 
 ## Paper material
 

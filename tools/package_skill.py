@@ -12,7 +12,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 NAME = 'academic-reading-master'
 TOP_FILES = ('SKILL.md', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md',
-             'requirements.txt', 'requirements-dev.txt', 'VERSION', '.gitignore')
+             'requirements.txt', 'requirements-dev.txt', 'VERSION', '.gitignore', '.gitattributes')
 SUFFIXES = {
     'references': {'.md'},
     'scripts': {'.py', '.cjs', '.js', '.svg', '.json', '.png', '.jpg', '.jpeg', '.webp'},
@@ -25,6 +25,14 @@ EXCLUDED = {'__pycache__', 'artifacts', 'artifacts-novice', '.git', 'node_module
             'PaperVault', 'dist', 'outputs', 'validation'}
 # Private installed upstream material has no public redistribution grant.
 PRIVATE_UPSTREAM = ('vendor/visualize', 'vendor/visualize-source.json')
+TEXT_SUFFIXES = {'.md', '.txt', '.py', '.cjs', '.js', '.css', '.html', '.json', '.yaml', '.svg'}
+
+
+def distribution_bytes(path):
+    data = path.read_bytes()
+    if path.suffix in TEXT_SUFFIXES or path.name in TOP_FILES or path.name == 'LICENSE':
+        data = data.replace(b'\r\n', b'\n')
+    return data
 
 
 def source_files():
@@ -73,7 +81,7 @@ def package(output):
             entry.create_system = 3
             entry.external_attr = 0o100644 << 16
             entry.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(entry, path.read_bytes(), compresslevel=9)
+            archive.writestr(entry, distribution_bytes(path), compresslevel=9)
     with zipfile.ZipFile(destination) as archive:
         if archive.testzip() is not None:
             raise ValueError('Distribution ZIP failed CRC validation.')

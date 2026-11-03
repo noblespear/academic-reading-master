@@ -1,4 +1,5 @@
 """Additive overview method-framework registration and scaffold regressions."""
+import base64
 import copy
 import json
 from pathlib import Path
@@ -72,6 +73,32 @@ class OverviewFrameworkTests(unittest.TestCase):
                     before = copy.deepcopy(data)
                     self.assertEqual(validate_learning_content(data, TEMPLATES), ([], []))
                     self.assertEqual(data, before)
+
+    def test_static_registration_accepts_local_images_and_rejects_components(self):
+        for kind in ("figure", "diagram"):
+            data = paper(figure(kind))
+            data["learning_requirements"]["overview_framework"]["kind"] = "static_figure"
+            self.assertEqual(validate_learning_content(data, TEMPLATES), ([], []))
+        data = paper(body_graph())
+        data["learning_requirements"]["overview_framework"]["kind"] = "static_figure"
+        self.assert_error(data, "static_figure requires a top-level figure or diagram")
+        with tempfile.TemporaryDirectory() as tmp:
+            asset = Path(tmp) / "framework.png"
+            asset.write_bytes(base64.b64decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII="))
+            data = paper(dict(figure("figure"), src="framework.png"))
+            data["learning_requirements"]["overview_framework"]["kind"] = "static_figure"
+            self.assertEqual(validate_learning_content(data, tmp), ([], []))
+
+    def test_static_registration_keeps_reference_and_asset_checks(self):
+        for mutate, expected in (
+                (lambda d:d["learning_requirements"]["overview_framework"].update(block_id="missing"), ".block_id"),
+                (lambda d:d["overview"]["sections"][-1]["blocks"][0].update(src="missing.svg"), "does not exist"),
+                (lambda d:d["overview"]["sections"][-1]["blocks"][0].update(src="../outside.svg"), "confined")):
+            data = paper()
+            data["learning_requirements"]["overview_framework"]["kind"] = "static_figure"
+            mutate(data)
+            self.assert_error(data, expected)
 
     def test_inline_and_catalog_graphs_require_default_visible_body_placement(self):
         for catalog in (False, True):
@@ -196,7 +223,7 @@ class OverviewFrameworkTests(unittest.TestCase):
         data["learning_requirements"]["overview_framework"]["block_id"] = "missing"
         self.assert_error(data, REQUIREMENT_PATH + ".block_id")
 
-    def test_all_presets_register_an_empty_incomplete_interactive_pipeline_and_review_tasks(self):
+    def test_all_presets_register_a_method_diagram_by_default(self):
         self.assertEqual(set(PRESETS), {"method", "theory", "survey", "system"})
         for preset in PRESETS:
             with self.subTest(preset=preset):
@@ -204,18 +231,21 @@ class OverviewFrameworkTests(unittest.TestCase):
                 requirement = data["learning_requirements"]["overview_framework"]
                 section = next(s for s in data["overview"]["sections"] if s["id"] == requirement["section_id"])
                 block = next(b for b in section["blocks"] if b["id"] == requirement["block_id"])
-                self.assertEqual(requirement, {"section_id":"overview-method", "block_id":"overview-method-framework", "kind":"interactive_pipeline"})
-                self.assertEqual(block["type"], "learning_aid")
-                self.assertEqual(block["placement"], "body")
-                self.assertEqual(block["aid"]["type"], "method_pipeline")
-                self.assertEqual(block["aid"]["config"], {"summary":"", "nodes":[], "edges":[]})
-                self.assertEqual(block["aid"]["fallback_text"], "")
+                self.assertEqual(requirement, {"section_id":"overview-method", "block_id":"overview-method-framework", "kind":"static_figure"})
+                self.assertEqual(block["type"], "figure")
+                self.assertEqual(block["src"], "assets/method-framework.svg")
+                self.assertEqual(block["evidence_kind"], "paper")
+                self.assertTrue(block["alt"].strip())
+                self.assertTrue(block["caption_zh"].strip())
+                self.assertIs(section["blocks"][0], block)
+                self.assertNotIn("aid", block)
+                self.assertEqual(todo["component_suggestions"], [])
                 self.assertNotIn("learning", block)
                 self.assertEqual((data["content_status"], todo["status"]), ("incomplete", "incomplete"))
                 self.assertTrue(all(item["complete"] is False for item in todo["items"]))
                 errors, _ = validate_learning_content(data)
                 self.assertTrue(any("unfinished scaffold" in e for e in errors), errors)
-                self.assertTrue(any("requires 2..40 stages" in e for e in errors), errors)
+                self.assertFalse(any("method_pipeline" in e for e in errors), errors)
                 self.assertEqual(data["content_contract_version"], "3.2")
                 self.assertEqual(todo["workflow"], "references/reader_workflow.md")
                 # Todo targets must still resolve after instruction deduplication;
@@ -227,13 +257,24 @@ class OverviewFrameworkTests(unittest.TestCase):
                     if "block_id" in item:
                         self.assertIn(item["block_id"], block_ids)
 
+    def test_python_pipeline_parameter_keeps_explicit_historical_behavior(self):
+        data, todo = build_scaffold("legacy-map", with_method_pipeline=True)
+        self.assertEqual(data["learning_requirements"]["overview_framework"]["kind"], "interactive_pipeline")
+        block = data["overview"]["sections"][1]["blocks"][-1]
+        self.assertEqual(block["aid"]["type"], "method_pipeline")
+        self.assertEqual(todo["component_suggestions"], ["method_pipeline"])
+        data, todo = build_scaffold("legacy-plain", with_method_pipeline=False)
+        self.assertNotIn("overview_framework", data["learning_requirements"])
+        self.assertEqual(todo["component_suggestions"], [])
+        self.assertTrue(all(b["type"] == "paragraph" for s in data["overview"]["sections"] for b in s["blocks"]))
+
     def test_schema_registration_is_optional_and_has_required_stable_reference_ids(self):
         schema = json.loads((ROOT / "schemas" / "paper-data-3.1.schema.json").read_text(encoding="utf-8"))
         requirements = schema["properties"]["learning_requirements"]
         self.assertNotIn("overview_framework", requirements.get("required", []))
         framework = requirements["properties"]["overview_framework"]
         self.assertEqual(set(framework["required"]), {"section_id", "block_id"})
-        self.assertIn("human review", framework["description"])
+        self.assertEqual(framework["properties"]["kind"]["enum"], ["static_figure", "interactive_pipeline"])
         try:
             from jsonschema import Draft202012Validator
             from referencing import Registry, Resource
@@ -243,6 +284,9 @@ class OverviewFrameworkTests(unittest.TestCase):
         registry = Registry().with_resources((name, Resource.from_contents(value)) for name, value in schemas.items())
         validator = Draft202012Validator(schema, registry=registry)
         self.assertEqual(list(validator.iter_errors(paper())), [])
+        static = paper()
+        static["learning_requirements"]["overview_framework"]["kind"] = "static_figure"
+        self.assertEqual(list(validator.iter_errors(static)), [])
         for value in (None, {}, {"section_id":"bad id", "block_id":"figure"}):
             data = paper()
             data["learning_requirements"]["overview_framework"] = value

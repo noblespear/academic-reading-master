@@ -44,6 +44,77 @@ def deferred_example():
 
 
 class Contract32Tests(unittest.TestCase):
+    def test_complete_illustrated_reader_deploys_without_review_records(self):
+        data, _ = build_scaffold("illustrated", title_en="Synthetic illustrated reader")
+        self.assertEqual(data["learning_requirements"]["overview_framework"]["kind"], "static_figure")
+        for view in ("overview", "explanation"):
+            for section in data[view]["sections"]:
+                for block in section["blocks"]:
+                    if block["type"] == "paragraph":
+                        block["text_zh"] = "Synthetic explanation of the method and its evidence."
+                    elif block["type"] == "figure":
+                        block.update(alt="论文完整中文架构图", caption_zh="输入经特征模块与预测模块得到输出。",
+                                     source_refs=[{"page":1, "label":"方法架构"}])
+        data["explanation"]["sections"][0]["blocks"].extend([
+            {"id":"example-image", "type":"figure", "src":"assets/example.svg",
+             "caption_zh":"Synthetic visual example", "evidence_kind":"teaching_example"},
+            {"id":"example-table", "type":"table", "headers":["Case", "Value"],
+             "rows":[["A", 1], ["B", 2]], "evidence_kind":"teaching_example"},
+            {"id":"example-equation", "type":"formula", "latex":"y=2x",
+             "evidence_kind":"teaching_example"}])
+        data["content_status"] = "ready"
+        self.assertNotIn("content_review", data)
+        with tempfile.TemporaryDirectory() as tmp:
+            paper = Path(tmp) / "papers/illustrated"
+            (paper / "assets").mkdir(parents=True)
+            (paper / "assets/example.svg").write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"><rect width="60" height="30"/></svg>',
+                encoding="utf-8")
+            (paper / "assets/method-framework.svg").write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="100">'
+                '<text x="10" y="40">输入 → 特征模块 → 预测模块 → 输出</text></svg>', encoding="utf-8")
+            js = paper / "paper-data.js"
+            js.write_text("window.PAPER_DATA = " + json.dumps(data) + ";", encoding="utf-8")
+            self.assertEqual(validate_paper_data(js, paper), ([], []))
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/deploy_reader.py"),
+                "--vault", tmp, "--paper", "illustrated"], capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue((paper / "reader.html").is_file())
+            self.assertEqual(load_paper_data(js), data)
+
+    def test_historical_plain_content_still_deploys_without_review_or_diagram(self):
+        data, _ = build_scaffold("plain", title_en="Synthetic reader", with_method_pipeline=False)
+        before = copy.deepcopy(data)
+        for view in ("overview", "explanation"):
+            for section in data[view]["sections"]:
+                for block in section["blocks"]:
+                    block["text_zh"] = "Synthetic test content explaining a paper section."
+        data["content_status"] = "ready"
+        with tempfile.TemporaryDirectory() as tmp:
+            paper = Path(tmp) / "papers" / "plain"
+            paper.mkdir(parents=True)
+            js = paper / "paper-data.js"
+            js.write_text("window.PAPER_DATA = " + json.dumps(data) + ";", encoding="utf-8")
+            self.assertEqual(validate_paper_data(js, paper), ([], []))
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/deploy_reader.py"),
+                "--vault", tmp, "--paper", "plain"], capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue((paper / "reader.html").is_file())
+            self.assertEqual(load_paper_data(js), data)
+        self.assertTrue(validate_learning_content(before)[0])
+        # Existing optional records do not force fabricated approvals.
+        data["content_review"] = {"reviewer":"", "factual_gates":{key:False for key in FACTUAL_GATES}}
+        self.assertEqual(validate_learning_content(data), ([], []))
+        data["content_review"]["factual_gates"]["source_accuracy"] = "yes"
+        self.assertTrue(validate_learning_content(data)[0])
+        # Content and asset validity are still required even without a reviewer.
+        data.pop("content_review")
+        data["overview"]["sections"][0]["blocks"][0]["text_zh"] = ""
+        self.assertTrue(validate_learning_content(data)[0])
+        data["overview"]["sections"][0]["blocks"][0].update(type="figure", src="../outside.png")
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertTrue(validate_learning_content(data, Path(tmp))[0])
+
     def test_explicit_deferred_allows_completed_body_with_chapter_sources(self):
         data = deferred_example()
         before = copy.deepcopy(data)
@@ -181,19 +252,19 @@ class Contract32Tests(unittest.TestCase):
                     "fallback":{"version":1, "blocks":[{"id":"ov-capacity", "type":"paragraph", "text":"One position is used."}]}}})
         self.assertEqual(validate_learning_content(data), ([], []))
 
-    def test_publication_still_requires_ready_named_reviewer_and_all_six_gates(self):
+    def test_publication_requires_completed_content_and_valid_optional_review(self):
         data = example()
-        mutations = [("content_status", "incomplete"), ("content_review", {})]
+        mutations = [("content_status", "incomplete"), ("content_review", [])]
         for field, value in mutations:
             wrong = copy.deepcopy(data); wrong[field] = value
             self.assertTrue(validate_learning_content(wrong)[0])
         for gate in FACTUAL_GATES:
             wrong = copy.deepcopy(data); wrong["content_review"]["factual_gates"][gate] = False
-            self.assertTrue(validate_learning_content(wrong)[0])
+            self.assertEqual(validate_learning_content(wrong), ([], []))
         data["content_review"]["reviewer"] = ""
-        self.assertTrue(any("reviewer" in error for error in validate_learning_content(data)[0]))
+        self.assertEqual(validate_learning_content(data), ([], []))
 
-    def test_scaffold_is_32_body_only_and_keeps_review_unfinished(self):
+    def test_scaffold_is_32_with_method_diagram_without_mandatory_review(self):
         for preset in PRESETS:
             data, todo = build_scaffold("draft", preset, "Draft", "草稿")
             self.assertEqual(data["content_contract_version"], "3.2")
@@ -201,8 +272,8 @@ class Contract32Tests(unittest.TestCase):
             self.assertEqual(data["content_status"], "incomplete")
             self.assertEqual(data["translation"], {"status":"deferred"})
             self.assertEqual(data["sections"], [])
-            self.assertEqual(data["content_review"]["reviewer"], "")
-            self.assertTrue(all(value is False for value in data["content_review"]["factual_gates"].values()))
+            self.assertNotIn("content_review", data)
+            self.assertIn("overview_framework", data["learning_requirements"])
             blocks = [block for view in (data["overview"]["sections"], data["explanation"]["sections"], data["sections"])
                       for section in view for block in section["blocks"]]
             self.assertTrue(all("learning" not in block for block in blocks))
@@ -219,6 +290,11 @@ class Contract32Tests(unittest.TestCase):
         registry = Registry().with_resources((name, Resource.from_contents(schema)) for name, schema in schemas.items())
         validator = Draft202012Validator(schemas["paper-data-3.2.schema.json"], registry=registry)
         self.assertEqual(list(validator.iter_errors(deferred_example())), [])
+        unreviewed = deferred_example()
+        unreviewed.pop("content_review")
+        self.assertEqual(list(validator.iter_errors(unreviewed)), [])
+        unreviewed["content_review"] = {"note":"Optional user-requested review."}
+        self.assertEqual(list(validator.iter_errors(unreviewed)), [])
         deferred = deferred_example()
         deferred["translation"]["status"] = "ready"
         self.assertTrue(list(validator.iter_errors(deferred)))

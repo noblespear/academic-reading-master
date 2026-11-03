@@ -8,12 +8,18 @@
 
 | 分支 | 定位 | 适合的阅读任务 |
 |---|---|---|
-| [main](https://github.com/noblespear/academic-reading-master/tree/main) | 工科特化版 | 方法、算法和系统论文；重点解释实验效果、性能与资源开销 |
-| [general-purpose](https://github.com/noblespear/academic-reading-master/tree/general-purpose) | 通用版，基于 GitHub v3.1.1 | 理工、人文社科及跨学科论文；按研究类型解释论证与发现，实验、指标和资源分析按需展开 |
+| [main](https://github.com/noblespear/academic-reading-master/tree/main) | 工科特化版，当前 v3.2.0 | 方法、算法和系统论文；重点解释机制、实验效果、性能与资源开销 |
+| [general-purpose](https://github.com/noblespear/academic-reading-master/tree/general-purpose) | 通用版，基于 v3.1.1 | 理工、人文社科及跨学科论文；按研究类型解释论证与发现 |
 
-两个分支使用同一 skill 名称和数据格式，安装时选择一个版本。已有阅读材料沿用原内容与稳定 ID。
+两个分支使用同一 skill 名称和数据格式，安装时选择一个版本。下文介绍 main；本次更新仅发布到 main，已有阅读材料和批注继续保留。
 
-当前 **main 为工科特化版**。需要更广泛的学科适配，请切换到 [general-purpose 分支](https://github.com/noblespear/academic-reading-master/tree/general-purpose)，按该分支 README 安装。下文介绍 main 的功能与使用方式。
+## v3.2.0 更新
+
+本版将正文、绘图、批注答疑和翻译的模型选择交给用户，由 agent 检查并保存配置。论文内容直接生成到阅读器；中文静态方法总图采用 draw-science 的科学对象与机制表达，原论文实验图保留原始信息。写作指南明确主语、完整句、连贯段落和证据表达，直接用于首次创作。
+
+答疑会话复用正文快照与后续变化，精确匹配的选区使用引用，避免在同一请求中重复附带原文；翻译重试复用已确认完成且依赖未变的页面。正常生成不再创建阅读底稿或独立审查任务。缓存和 token 消耗仍取决于宿主、模型与实际任务，本版不承诺固定降费比例。
+
+日常流程为“读取论文与图表 → 生成完整图文内容 → 填入阅读器 → 交付”。成品固定包含概览、原章详解和方法总图，并由 AI 自主判断、直接补充有助理解的原图与可视化、整理表格、公式推导、算法步骤和教学例子；标清原文事实、补充推导与教学设定。所有内容直接融入概览与详解，不创建阅读底稿、视觉计划、独立审阅任务、评分表或真实答疑测试。部署脚本检查数据、资源和方法图结构；`content_status: ready` 表示图文内容已完成，3.2 数据可省略 `content_review`。
 
 ## 可以做什么
 
@@ -40,11 +46,26 @@
 
 这是提供给 AI 智能体宿主使用的 **skill 目录**。论文检索、内容生成和周报写作由宿主执行；本地脚本负责文献管理、页面、批注队列和导出。
 
-1. 下载分发文件 `academic-reading-master-v3.1.1.skill`。它是 ZIP 容器，包含一个 `academic-reading-master/` 目录；若宿主支持该格式，可按其导入方式安装。
+1. 下载分发文件 `academic-reading-master-v3.2.0.skill`。它是 ZIP 容器，包含一个 `academic-reading-master/` 目录；若宿主支持该格式，可按其导入方式安装。
 2. 宿主不支持直接导入时，使用同内容的 `.zip` 文件，或将 `.skill` 的扩展名改为 `.zip` 后解压。把 `academic-reading-master/` 放入宿主的 skills 目录，确保 `SKILL.md` 位于该目录的顶层。例如，Codex 的用户 skills 目录可以使用 `~/.agents/skills/`。
 3. 按宿主的技能加载方式重新加载，然后在会话中提出任务。已有文献库时指定其位置；首次使用可让宿主创建 `PaperVault`。
 
-也可以从源代码安装：将仓库内容放入名为 `academic-reading-master` 的技能目录，保留完整的脚本、资源、数据规范与许可文件。没有必要复制开发测试产物。当前 v3.1.1 分发包对应工科特化版；通用版从 general-purpose 分支安装。安装包及历史版本可在 [Releases](https://github.com/noblespear/academic-reading-master/releases) 获取。
+### 首次使用：选择各环节模型
+
+**模型配置由 agent 在加载 skill 时完成。** agent 先检查本地已保存的选择；配置存在时直接沿用，缺少本次要用的角色时，agent 会在聊天中集中询问模型 ID 与推理档位，保存后再执行。
+
+| 角色 | 覆盖内容 |
+|---|---|
+| 正文 `writing` | 概览、原章详解、表格、公式和教学解释 |
+| 绘图 `drawing` | 中文方法总图、机制示意和必要的新绘图片 |
+| 批注答疑 `qa` | 选区提问与连续追问 |
+| 翻译 `translation` | 用户触发后的全文翻译 |
+
+可以为四个角色选择不同模型，也可以明确选择“继承宿主”；推理档位须由所选模型和宿主支持。普通阅读先配置正文和绘图，接通答疑或生成翻译时再检查对应角色，尚未使用的角色不会阻塞阅读。用户可在聊天中随时要求 agent 修改配置，阅读器中没有模型设置面板。
+
+用户级配置保存在 `${CODEX_HOME}/academic-reading-master/model-profiles.json`；未设置 `CODEX_HOME` 时使用 `~/.codex/academic-reading-master/model-profiles.json`。单个文献库可在 `<vault>/.reader/model-profiles.json` 覆写。优先级为本次明确指令、本库设置、用户级设置；升级 skill 保留这些目录中的选择。配置不包含 API 密钥。宿主须能实际调用所选模型；保存模型名称本身不会增加模型权限。详细规则和维护命令见[模型与上下文](references/model_and_context_policy.md)。
+
+也可以从源代码安装：将仓库内容放入名为 `academic-reading-master` 的技能目录，保留完整的脚本、资源、数据规范与许可文件。没有必要复制开发测试产物。安装包及历史版本可在 [Releases](https://github.com/noblespear/academic-reading-master/releases) 获取。
 
 可以直接这样提问：
 
@@ -65,7 +86,8 @@
 | 服务、队列、普通 Markdown 导出 | Python 3.10 或更新版本；核心使用标准库 |
 | PDF 文本、图像提取与核对 | Python 环境中有 PyMuPDF；可用 `python -m pip install -r requirements.txt` 补齐 |
 | 数学表达式校验 | Node.js；优先复用宿主已有运行时，PATH 找不到时可设置 `ARM_NODE_PATH` 为可执行文件位置 |
-| 自动批注答疑 | 当前提供 Codex app-server 适配器，需要本机可运行且已登录的 Codex CLI；认证、模型与推理设置继承宿主 |
+| 自动批注答疑 | 当前提供 Codex app-server 适配器，需要本机可运行且已登录的 Codex CLI；认证沿用宿主，模型与推理使用保存的 `qa` 选择或明确选择继承 |
+| 科研示意图 | 内置精简绘图指南；可复用已安装的 draw-science 与导出工具，缺少 draw.io 环境时直接生成静态 SVG |
 | 前端开发测试 | 另外需要 Playwright 与 Chromium，日常使用无需安装 |
 
 可用宿主的模型调用仍遵循其账号权限、额度和计费方式。skill 不附带模型、登录账号或 API 密钥。

@@ -369,10 +369,8 @@ class ScaffoldTests(unittest.TestCase):
             data = json.loads(json.dumps(data, ensure_ascii=False, allow_nan=False))
             self.assertEqual(data["schema_version"], 3)
             self.assertEqual(data["content_status"], "incomplete")
-            self.assertNotIn("plain_language_scores", data["content_review"])
-            self.assertEqual(data["content_review"]["reviewer"], "")
-            self.assertTrue(all(value is False for value in data["content_review"]["factual_gates"].values()))
-            self.assertTrue(data["content_review"]["note"])
+            self.assertNotIn("content_review", data)
+            self.assertIn("overview_framework", data["learning_requirements"])
             self.assertTrue((SKILL / todo["workflow"]).is_file())
             self.assertTrue(data["overview"]["sections"])
             self.assertTrue(data["explanation"]["sections"])
@@ -390,7 +388,7 @@ class ScaffoldTests(unittest.TestCase):
             self.assertNotIn("default_annotations", tasks)
             self.assertNotIn("术语批注", tasks)
 
-    def test_cli_writes_strict_assignment_todo_and_protects_existing_output(self):
+    def test_cli_writes_content_and_static_asset_without_authoring_records(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "paper-data.js"
             args = [sys.executable,str(SCRIPTS / "init_reading_content.py"),"--id","sample","--preset","theory","--output",str(output)]
@@ -399,10 +397,38 @@ class ScaffoldTests(unittest.TestCase):
             original = output.read_text(encoding="utf-8")
             data = json.loads(original.removeprefix("window.PAPER_DATA = ").strip().removesuffix(";"))
             self.assertEqual(data["content_status"], "incomplete")
-            self.assertTrue(output.with_name("paper-data-todo.json").is_file())
+            self.assertFalse(output.with_name("paper-data-todo.json").exists())
+            self.assertIn("overview_framework", data["learning_requirements"])
+            self.assertEqual(data["learning_requirements"]["overview_framework"]["kind"], "static_figure")
+            self.assertEqual({p.relative_to(tmp).as_posix() for p in Path(tmp).rglob("*") if p.is_file()},
+                             {"paper-data.js", "assets/method-framework.svg"})
+            framework = data["overview"]["sections"][1]["blocks"][0]
+            self.assertEqual(validate_rich_document({"version":1, "blocks":[framework]}, paper_dir=tmp), ([], []))
+            optional = Path(tmp) / "legacy" / "optional.js"
+            requested = subprocess.run(args[:-1] + [str(optional), "--write-todo", "--with-method-pipeline"],
+                                       capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(requested.returncode, 0, requested.stderr)
+            self.assertTrue(optional.with_name("optional-todo.json").is_file())
+            self.assertFalse((optional.parent / "assets/method-framework.svg").exists())
+            requested_data = json.loads(optional.read_text(encoding="utf-8").removeprefix("window.PAPER_DATA = ").strip().removesuffix(";"))
+            self.assertIn("overview_framework", requested_data["learning_requirements"])
+            self.assertEqual(requested_data["learning_requirements"]["overview_framework"]["kind"], "interactive_pipeline")
             repeated = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
             self.assertNotEqual(repeated.returncode, 0)
             self.assertEqual(original, output.read_text(encoding="utf-8"))
+
+    def test_cli_preserves_an_existing_completed_static_figure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "paper-data.js"
+            asset = Path(tmp) / "assets/method-framework.svg"
+            asset.parent.mkdir()
+            completed = '<svg xmlns="http://www.w3.org/2000/svg"><title>已完成论文架构图</title></svg>'
+            asset.write_text(completed, encoding="utf-8")
+            result = subprocess.run([sys.executable, str(SCRIPTS / "init_reading_content.py"),
+                "--id", "sample", "--output", str(output), "--force"],
+                capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(asset.read_text(encoding="utf-8"), completed)
 
     def test_schema_preserves_optional_historical_score_shape(self):
         schema = json.loads((SKILL / "schemas" / "paper-data-3.1.schema.json").read_text(encoding="utf-8"))

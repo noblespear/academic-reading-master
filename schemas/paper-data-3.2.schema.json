@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "paper-data-3.2.schema.json",
-  "title": "Reader content contract 3.2 (schema_version 3; body-first human review)",
+  "title": "Reader content contract 3.2 (schema_version 3; overview and explanation)",
   "type": "object",
   "required": [
     "schema_version",
@@ -9,7 +9,6 @@
     "content_version",
     "content_status",
     "id",
-    "content_review",
     "overview",
     "explanation",
     "sections"
@@ -43,10 +42,6 @@
     },
     "content_review": {
       "type": "object",
-      "required": [
-        "reviewer",
-        "factual_gates"
-      ],
       "properties": {
         "reviewer": {
           "type": "string"
@@ -64,14 +59,6 @@
         },
         "factual_gates": {
           "type": "object",
-          "required": [
-            "source_accuracy",
-            "evidence_separation",
-            "claim_scope",
-            "prerequisites",
-            "formula_correctness",
-            "analogy_and_example"
-          ],
           "properties": {
             "source_accuracy": {
               "type": "boolean"
@@ -91,18 +78,22 @@
             "analogy_and_example": {
               "type": "boolean"
             }
+          },
+          "additionalProperties": {
+            "type": "boolean"
           }
         },
         "note": {
           "type": "string"
         }
-      }
+      },
+      "description": "Optional historical or user-requested review record; not a deployment prerequisite."
     },
     "learning_requirements": {
       "type": "object",
       "properties": {
         "overview_framework": {
-          "description": "Optional additive registration of a default-visible top-level overview method framework. New scaffolds declare kind interactive_pipeline, requiring a placement body method_pipeline aid; static figures cannot satisfy it. Registrations without kind retain legacy figure/diagram and graph_walkthrough compatibility. Complete method coverage and agreement with prose require human review.",
+          "description": "Optional additive registration of a default-visible top-level overview method framework. New scaffolds declare kind static_figure for a complete static Chinese architecture figure/diagram using a local image asset. Explicit interactive_pipeline retains the body method_pipeline contract; registrations without kind retain historical figure/diagram and graph_walkthrough compatibility. Complete method coverage and agreement with prose remain an authoring judgment; no review record is required.",
           "type": "object",
           "required": [
             "section_id",
@@ -116,8 +107,11 @@
               "$ref": "content-types.schema.json#/$defs/id"
             },
             "kind": {
-              "const": "interactive_pipeline",
-              "description": "When present, require the generic clickable directed method map. Omit only for pre-existing registrations."
+              "enum": [
+                "static_figure",
+                "interactive_pipeline"
+              ],
+              "description": "static_figure requires a top-level figure/diagram with a local SVG, PNG or other supported image. interactive_pipeline retains the explicit legacy method_pipeline requirement. Omission retains historical registration behavior."
             }
           }
         },
@@ -414,7 +408,7 @@
       "description": "Explicit deferred translation permits completed body delivery with sections:[]; ready denotes completed bilingual translation. Omitted markers retain the original completion rule."
     }
   },
-  "description": "Contract 3.2 has one reading line: block.learning is forbidden. Each actual body block, including details/quote children, requires its own evidence_kind; no implicit provenance inheritance. Body IDs and source block/content references share paper scope in deployment validation. Aid fallback documents retain their own local rich-document ID scope. Humans review formula explanations in the body. Publication requires ready plus a named reviewer with all six factual gates; isolated preview skips only completed publication review. Translation status is an optional additive marker: deferred requires empty translation sections and ready requires non-empty bilingual sections. Chapter source_refs support ordinary prose without repeated block references.",
+  "description": "Contract 3.2 stores overview and explanation in visible body blocks with evidence_kind and stable IDs. Ready means the content is complete; semantic review metadata is optional and is never automatically certified. Deferred translation keeps sections empty. Existing resource, reference, formula and safe-data checks still apply.",
   "$defs": {
     "bodyBlock": {
       "allOf": [

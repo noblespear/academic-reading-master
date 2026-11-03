@@ -1,0 +1,64 @@
+{
+  "title": "合成示例：并行路径与融合",
+  "nodes": [
+    {
+      "id": "input",
+      "label": "观测数据",
+      "glyph": "input",
+      "column": 0,
+      "row": 1
+    },
+    {
+      "id": "geometry",
+      "label": "几何表示",
+      "detail": "路径一",
+      "glyph": "matrix",
+      "column": 1,
+      "row": 0
+    },
+    {
+      "id": "appearance",
+      "label": "外观表示",
+      "detail": "路径二",
+      "glyph": "feature",
+      "column": 1,
+      "row": 2
+    },
+    {
+      "id": "fusion",
+      "label": "融合输出",
+      "detail": "汇合两路信息",
+      "glyph": "output",
+      "column": 2,
+      "row": 1
+    }
+  ],
+  "edges": [
+    {
+      "source": "input",
+      "target": "geometry",
+      "kind": "branch"
+    },
+    {
+      "source": "input",
+      "target": "appearance",
+      "kind": "branch"
+    },
+    {
+      "source": "geometry",
+      "target": "fusion",
+      "kind": "flow"
+    },
+    {
+      "source": "appearance",
+      "target": "fusion",
+      "kind": "flow"
+    }
+  ],
+  "theme": {
+    "canvas_min_width": 640,
+    "node_width": 160,
+    "column_gutter": 54,
+    "margin": 24
+  }
+}

@@ -1,30 +1,28 @@
 ---
 name: academic-reading-master
-description: 搜集核验论文，生成概览、原章详解和按需全文双语翻译的阅读器。正文展开隐藏前提、概念、数学与证据，配简洁方法总图、相关原图表和必要局部图；支持快速批注答疑、续读、跨论文比较与研究周报。
+description: 阅读学术论文，生成含概览、原章详解、方法总图、必要原图与可视化、表格和公式的完整阅读器；支持按需翻译、批注答疑、论文搜集与研究周报。
 ---
 
 # Academic Reading Master
 
-帮助科研新手跟上论文的推理，并对照原文。固定阅读器负责呈现，模型负责准确、连贯的正文与图文解释。
+默认任务：读取论文与图表 → 直接生成完整图文内容 → 填入现成阅读器 → 交付。只加载[日常创作短指南](references/reader_workflow.md)，其他资料按实际字段需要查阅。
 
-## 任务入口
-
-日常创作只读一份短指南；链接不是预读清单。同一上下文已读取且未变的规则和材料不重复加载。
-
-| 当前任务 | 只加载对应入口 |
-|---|---|
-| 新建阅读器、继续精读或局部修订 | [日常创作短指南](references/reader_workflow.md) |
-| 搜集、导入或核验论文 | [搜集](references/collection_guide.md) |
-| 批注与追问 | [答疑](references/answer_worker_guide.md)；仅遇运行问题查[批注](references/annotation_guide.md)，通信异常再查[桥接](references/bridge_protocol.md) |
-| 专门调整方法图或制作其他演示 | [图形专题](references/visual_decision_guide.md)，只查正在使用的组件字段 |
-| 旧稿升级与锚点迁移 | [迁移](references/migration_guide.md) |
-| 研究周报 | [周报](references/weekly_report_guide.md)，需要时查[素材](references/report_reading_inputs.md)和[讲解](references/report_explanation_guide.md) |
-| 跨论文比较 | [主题矩阵](references/theme_matrix_guide.md) |
+加载本技能时，agent 先对本次实际要执行的角色运行一次有界配置检查：`python scripts/model_profiles.py --vault <vault> check writing drawing`（没有当前库时省略 `--vault`；本次接通答疑才加 `qa`，实际生成翻译才加 `translation`）。已有用户级/本库配置直接沿用，本次用户明确指定优先，无需再问。仅当待执行角色缺少配置且用户未指定时，在聊天中一次集中询问其模型与推理档位；“继承宿主”也必须是用户明确选择。收到回答后先由 agent 保存，再执行该环节；未用角色不阻塞普通阅读。配置与保存命令见[模型与上下文](references/model_and_context_policy.md)。
 
 ## 工作范围（主规则）
 
-- 各阶段沿用宿主默认模型与推理设置，用户明确指定时覆盖对应项，不修改全局配置。
-- 全文翻译仅在用户进入翻译页并明确点击生成后启动。批注用选区、必要历史及概览/详解，依据不足再补相关原文，不默认带翻译或原文全文；解释原图、公式，不自动创作新图或交互。
-- 文献库使用用户指定位置或当前有效 PaperVault/library.json。保留原PDF、资源、稳定ID、批注、草稿和暂停状态；unknown投递不自动重发。`.reader/state.sqlite3`是问答权威状态，`annotations.json`是快照，凭据留宿主。
+- 完整成品包含概览、原章详解和中文静态方法架构图；原图、关键表格、公式推导、算法步骤及教学例子融入正文。新绘方法/机制图默认采用科学对象示意与 draw-science 阅读器精简模式：让真实对象、局部变化和拓扑承担解释，按最终面板尺寸布局。原始实验图保留数据、图例和比较条件。AI 自主补充理解所需内容，并说明补充性质。
+- 正文、绘图、批注答疑、翻译分别由宿主按角色实际调度用户选定的模型与推理档位；已保存选择持续生效，明确选择继承的字段由宿主决定，不自动升降级。复用加载时检查的配置，不重复读取；需要另一模型时只交接该环节必要材料，保存配置本身不等于已经执行。默认不启动独立审阅、评分或多轮复验；不另写阅读计划、视觉计划、工作底稿或中间总结。具体疑点查对应原文，直接修正该处。
+- 正文与表格由原文一次组织进最终数据，首次生成即采用短指南内置的写作形式、正向表达与反防御原则：段首交代要点，话题或执行者变化时明确主语，用完整句和连贯段落讲清对象、机制与证据，必要条件就近说明。长文可按章直写，局部缺漏、错数或渲染问题只修改受影响块，不重复生成或润色已完成全文。
+- 保持解释深度与图文对应，复用现成阅读器、布局脚本和组件。读到的内容直接组织到最终数据，图片保存为阅读器资源；不为每篇开发前端。
+- 同一环节沿用已选模型、稳定指令与会话；已读且未变的原文、技能和正文禁止重复全量回传，局部修订只取相关段落。文件内容留本地，验证只返回计数或错误位置，显示检查只取局部状态与必要截图，禁止为检查排版回传整篇正文/整页 DOM 或可访问性树。不能靠删图、压缩推导来省 token。
+- 使用用户指定文献库或当前 PaperVault/library.json，保留原 PDF、稳定 ID、批注和问答历史。`.reader/state.sqlite3` 是问答状态，`annotations.json` 是快照；unknown 投递不自动重发。
 
-创作质量、图文放置、复查范围和交付步骤统一以短指南为准。其他文档只提供专题细节，不建立第二套日常流程。
+## 任务入口
+
+- 普通论文阅读用上述短指南。新绘图使用[draw-science 阅读器精简入口](references/visual_authoring_guide.md)，需要结构细节时再查[图形专题](references/visual_decision_guide.md)。阅读任务以该适配为准，保留现有截图停止条件；完整投稿/精确复刻流程仅在用户明确要求时启用。仅维护旧交互稿或明确要求交互时查组件合同。
+- 正向写作基础已内置日常创作与答疑指南，无须再加载语言技能。用户专门要求阅读器文字润色或风格分析时，再查[语言编辑适配](references/anti_defensive_integration.md)。
+- 搜集、导入论文：[搜集](references/collection_guide.md)。
+- 用户批注答疑：[答疑](references/answer_worker_guide.md)；运行异常再查[批注](references/annotation_guide.md)或[桥接](references/bridge_protocol.md)。只带选区和相关上下文。
+- 全文翻译：用户明确要求或在翻译页点击生成时，查[翻译](references/translation_rules.md)。
+- 研究周报：[周报](references/weekly_report_guide.md)；跨论文比较：[主题矩阵](references/theme_matrix_guide.md)；旧稿迁移：[迁移](references/migration_guide.md)。

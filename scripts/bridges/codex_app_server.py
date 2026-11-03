@@ -57,6 +57,71 @@ def _body_key(block):
     return json.dumps([block.get("view"), block.get("section_id"), block.get("parent_ids", []), block.get("id")], ensure_ascii=False)
 
 
+def _selection_value(block, field):
+    value = block
+    for part in field.split("."):
+        value = value[int(part)] if isinstance(value, list) else value[part]
+    return value
+
+
+def _compact_selections(wire, complete_body, payload):
+    """Reference an exact, unambiguous delivered block instead of repeating it.
+
+    The complete current body is either in this packet or represented by the
+    confirmed snapshot/delta. A translation selection is never assumed to be
+    part of that body. Rich fields absent from its readable projection remain
+    inline, even when their parent block can be referenced.
+    """
+    selected = wire.get("selected_blocks", [])
+    if not isinstance(selected, list):
+        return
+    anchor = payload.get("anchor", {})
+    fragments = anchor.get("fragments") or [anchor]
+    translation_ids = {fragment.get("content_id") or anchor.get("content_id") or payload.get("block_id")
+        for fragment in fragments if isinstance(fragment, dict)
+        and (fragment.get("view") or anchor.get("view", "translation")) in ("translation", "body")}
+    candidates = {}
+    for block in complete_body:
+        projection = {key: value for key, value in block.items()
+                      if key not in ("view", "section_id", "section_title", "parent_ids")}
+        candidates.setdefault(json_digest(projection), []).append(block)
+    references = {}
+    originals = deepcopy(selected)
+    for index, block in enumerate(originals):
+        matches = candidates.get(json_digest(block), [])
+        if len(matches) != 1 or block.get("id") in translation_ids:
+            continue
+        match = matches[0]
+        reference = {"view": match.get("view"), "section_id": match.get("section_id"),
+                     "parent_ids": match.get("parent_ids", []), "content_id": match.get("id"),
+                     "block_sha256": json_digest(match)}
+        references[index] = reference
+        selected[index] = {key: block[key] for key in ("id", "type", "source_refs", "section_source_refs") if key in block}
+        selected[index]["reader_body_ref"] = reference
+    selected_fields = wire.get("selected_fields", [])
+    for field in selected_fields if isinstance(selected_fields, list) else []:
+        if not isinstance(field, dict) or "value" not in field or not isinstance(field.get("field"), str):
+            continue
+        matches = []
+        for index, block in enumerate(originals):
+            if block.get("id") != field.get("content_id"):
+                continue
+            try:
+                value = _selection_value(block, field["field"])
+            except (KeyError, IndexError, TypeError, ValueError):
+                continue
+            if json_digest(value) == json_digest(field["value"]):
+                matches.append(index)
+        if len(matches) != 1:
+            continue
+        index = matches[0]
+        field["value_sha256"] = json_digest(field.pop("value"))
+        if index in references:
+            field["reader_body_ref"] = references[index]
+        else:
+            field["selected_block_ref"] = {"index": index, "block_sha256": json_digest(originals[index])}
+
+
 def _history_packet(text):
     if not isinstance(text, str) or PACKET_PREFIX not in text:
         return None
@@ -100,6 +165,56 @@ def _compact_task(payload, seen_tasks):
     if brief:
         result["history"] = brief
     return result
+
+
+def _compact_task_selection(task, original_fields, wire_fields):
+    """Keep stored anchors intact; replace only exact full-field wire copies."""
+    if not isinstance(original_fields, list) or not isinstance(wire_fields, list):
+        return
+    candidates = []
+    for index, field in enumerate(original_fields):
+        if not isinstance(field, dict) or not isinstance(field.get("value"), str) or not field["value"]:
+            continue
+        if index >= len(wire_fields) or not isinstance(wire_fields[index], dict):
+            continue
+        current = wire_fields[index]
+        if (current.get("content_id"), current.get("field")) != (field.get("content_id"), field.get("field")):
+            continue
+        digest = json_digest(field["value"])
+        if current.get("value_sha256", json_digest(current.get("value"))) != digest:
+            continue
+        candidates.append((field, {"selected_field_index": index, "value_sha256": digest}))
+
+    def reference(value, anchor=None):
+        if not isinstance(value, str) or not value:
+            return None
+        matches = [ref for field, ref in candidates if field["value"] == value
+                   and (not anchor or not anchor.get("content_id") or anchor["content_id"] == field.get("content_id"))
+                   and (not anchor or not anchor.get("field") or anchor["field"] == field.get("field"))]
+        return matches[0] if len(matches) == 1 else None
+
+    selected = reference(task.get("selected_text"))
+    if selected:
+        task.pop("selected_text")
+        task["selected_text_ref"] = selected
+
+    def compact_anchor(anchor):
+        if not isinstance(anchor, dict):
+            return
+        ref = reference(anchor.get("exact"), anchor)
+        if ref:
+            anchor.pop("exact")
+            anchor["exact_ref"] = ref
+        quote = anchor.get("quote")
+        if isinstance(quote, dict):
+            ref = reference(quote.get("exact"), anchor)
+            if ref:
+                quote.pop("exact")
+                quote["exact_ref"] = ref
+        for fragment in anchor.get("fragments", []):
+            compact_anchor(fragment)
+
+    compact_anchor(task.get("anchor"))
 
 
 def _exchange_key(item):
@@ -596,6 +711,7 @@ class CodexAppServerBridge(HostBridge):
             wire["original_pdf"] = {key: value for key, value in wire["original_pdf"].items() if key != "text_pages"}
         if isinstance(wire.get("selected_blocks"), list):
             wire["selected_blocks"] = [readable_block(block) for block in wire["selected_blocks"] if isinstance(block, dict)]
+        complete_body = wire.get("reader_body", [])
         proposed = None
         if isinstance(wire.get("reader_body"), list):
             if state.get("baseline_status") == "unverified":
@@ -616,6 +732,7 @@ class CodexAppServerBridge(HostBridge):
             # The initial build measures the complete readable body. Recompute
             # after delta selection so capacity describes this turn's input.
             wire.pop("context_capacity", None)
+        _compact_selections(wire, complete_body if isinstance(complete_body, list) else [], task["payload"])
         shared = {key: json_digest(wire[key]) for key in SHARED_CONTEXT_FIELDS if key in wire}
         prior_shared = state.get("context_fingerprints", {})
         removed = sorted(set(prior_shared) - set(shared))
@@ -627,7 +744,11 @@ class CodexAppServerBridge(HostBridge):
         proposed = {**(proposed or {}), "context_fingerprints": shared}
         if isinstance(context.get("original_pdf"), dict):
             proposed["original_pdf"] = context["original_pdf"]
-        return {"task": _compact_task(task["payload"], state["seen_tasks"]), "context": wire}, proposed
+        current_task = _compact_task(task["payload"], state["seen_tasks"])
+        # _compact_task otherwise shares anchor objects with durable task data.
+        current_task = deepcopy(current_task)
+        _compact_task_selection(current_task, context.get("selected_fields"), wire.get("selected_fields"))
+        return {"task": current_task, "context": wire}, proposed
 
     def _clear_active(self, thread_id):
         # Resume may reveal an earlier unknown active turn. An explicit replacement
